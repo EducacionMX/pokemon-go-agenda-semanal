@@ -44,10 +44,41 @@ async function load(){
  EVENTS=EVENTS.filter(e=>start(e)).sort((a,b)=>start(a)-start(b));render();
 }
 function bell(e,cls=''){return '<button class="bell '+cls+' '+(fav[id(e)]?'on':'')+'" data-bell="'+escapeHtml(id(e))+'" title="Recordarme">🔔</button>'}
+function detailAttrs(e){return ' data-event-detail="'+escapeHtml(id(e))+'" class="clickable" '}
+function collectDetails(e){
+ const x=e.extraData||{}, out={bonuses:[],pokemon:[],notes:[]};
+ if(x.communityday){
+   out.bonuses=(x.communityday.bonuses||[]).map(v=>v.text).filter(Boolean);
+   out.pokemon=(x.communityday.spawns||[]).map(v=>({name:v.name,image:v.image})).filter(v=>v.name);
+ }
+ if(x.spotlight){
+   if(x.spotlight.bonus)out.bonuses.push(x.spotlight.bonus);
+   out.pokemon=(x.spotlight.list||[]).map(v=>({name:v.name,image:v.image})).filter(v=>v.name);
+ }
+ if(x.generic){
+   if(x.generic.hasSpawns)out.notes.push('Incluye apariciones salvajes.');
+   if(x.generic.hasFieldResearchTasks)out.notes.push('Incluye tareas de investigación de campo.');
+ }
+ if(Array.isArray(e.bonuses)) out.bonuses.push(...e.bonuses.map(v=>typeof v==='string'?v:v.text).filter(Boolean));
+ return out;
+}
+function openEventDetail(eventId){
+ const e=EVENTS.find(x=>id(x)===eventId); if(!e)return;
+ const d=collectDetails(e), s=start(e), z=end(e);
+ let html='<div class="modal-hero"><div><span class="date-tag">'+emoji(e)+' '+escapeHtml(e.heading||'Evento')+'</span><h2 id="eventModalTitle">'+escapeHtml(e.name)+'</h2><div class="modal-meta"><span class="modal-pill">🗓️ '+escapeHtml(fmt(s,{weekday:'long',day:'numeric',month:'long'}))+'</span><span class="modal-pill">🕒 '+escapeHtml(timeText(e))+'</span></div><p class="modal-summary">'+escapeHtml(summary(e))+'</p></div><img src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""></div>';
+ if(d.bonuses.length) html+='<section class="modal-section"><h3>✨ Bonos y ventajas</h3><div class="detail-list">'+d.bonuses.map(v=>'<div class="detail-item">✦ '+escapeHtml(v)+'</div>').join('')+'</div></section>';
+ if(d.pokemon.length) html+='<section class="modal-section"><h3>🌸 Pokémon destacados</h3><div class="pokemon-list">'+d.pokemon.map(v=>'<div class="poke-chip">'+(v.image?'<img src="'+escapeHtml(v.image)+'" alt="">':'')+'<span>'+escapeHtml(v.name)+'</span></div>').join('')+'</div></section>';
+ if(d.notes.length) html+='<section class="modal-section"><h3>📌 Qué incluye</h3><div class="detail-list">'+d.notes.map(v=>'<div class="detail-item">'+escapeHtml(v)+'</div>').join('')+'</div></section>';
+ if(e.link) html+='<a class="modal-link" href="'+escapeHtml(e.link)+'" target="_blank" rel="noopener">Ver fuente completa ↗</a>';
+ html+='<div class="modal-note">Los detalles mostrados dependen de la información disponible en el feed del evento.</div>';
+ $('#eventModalContent').innerHTML=html; $('#eventModal').classList.add('open'); $('#eventModal').setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+}
+function closeEventDetail(){const m=$('#eventModal');m.classList.remove('open');m.setAttribute('aria-hidden','true');document.body.style.overflow=''}
+function wireDetails(){$('[data-event-detail]').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();openEventDetail(el.dataset.eventDetail)})}
 function wireBells(){$$('[data-bell]').forEach(b=>b.onclick=()=>{const e=EVENTS.find(x=>id(x)===b.dataset.bell);if(!e)return;if(fav[id(e)])delete fav[id(e)];else fav[id(e)]={id:id(e),name:e.name,start:e.start,end:e.end,image:e.image||defaultImage(e)};localStorage.setItem('pokeweek:fav',JSON.stringify(fav));render()})}
 function renderToday(){
  const now=new Date(), todays=EVENTS.filter(e=>start(e)&&same(start(e),now)&&end(e)>=now).slice(0,4);
- $('#todayCards').innerHTML=todays.length?todays.map(e=>'<article class="feature-card '+cat(e)+'">'+bell(e)+'<span class="'+(now>=start(e)&&now<=end(e)?'live-tag':'date-tag')+'">'+(now>=start(e)&&now<=end(e)?'● EN VIVO':emoji(e)+' '+(e.heading||'Evento'))+'</span><h3>'+escapeHtml(e.name)+'</h3><div class="feature-time">🕒 '+escapeHtml(timeText(e))+'</div><p>'+escapeHtml(summary(e))+'</p><img class="event-img" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""></article>').join(''):'<article class="feature-card"><span class="date-tag">♡ TRANQUILA</span><h3>No hay eventos activos hoy</h3><p>Mira la agenda semanal para preparar lo que viene.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></article>';
+ $('#todayCards').innerHTML=todays.length?todays.map(e=>'<article class="feature-card '+cat(e)+'">'+bell(e)+'<span class="'+(now>=start(e)&&now<=end(e)?'live-tag':'date-tag')+'">'+(now>=start(e)&&now<=end(e)?'● EN VIVO':emoji(e)+' '+(e.heading||'Evento'))+'</span><h3 '+detailAttrs(e)+'>'+escapeHtml(e.name)+'</h3><div class="feature-time">🕒 '+escapeHtml(timeText(e))+'</div><p>'+escapeHtml(summary(e))+'</p><img '+detailAttrs(e)+' class="event-img clickable" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""></article>').join(''):'<article class="feature-card"><span class="date-tag">♡ TRANQUILA</span><h3>No hay eventos activos hoy</h3><p>Mira la agenda semanal para preparar lo que viene.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></article>';
 }
 function renderWeek(){
  const ws=add(monday(new Date()),weekOffset*7),we=add(ws,7);
@@ -55,7 +86,7 @@ function renderWeek(){
  let html='';
  for(let i=0;i<7;i++){const d=add(ws,i),list=EVENTS.filter(e=>visible(e)&&start(e)<add(d,1)&&end(e)>=d);
  html+='<div class="day-col '+(same(d,new Date())?'today':'')+'"><div class="day-head"><div class="day-name">'+fmt(d,{weekday:'short'})+'</div><div class="day-num">'+fmt(d,{day:'numeric'})+'</div></div>'+
- (list.length?list.map(e=>'<article class="event-card '+cat(e)+'">'+bell(e)+'<div class="event-content"><h4>'+emoji(e)+' '+escapeHtml(e.name)+'</h4><div class="event-time">🕒 '+escapeHtml(timeText(e))+'</div><p class="event-summary">'+escapeHtml(summary(e))+'</p></div><img class="card-img" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""><div style="clear:both"></div></article>').join(''):'<div class="none">♡<br>libre</div>')+'</div>'}
+ (list.length?list.map(e=>'<article class="event-card '+cat(e)+'">'+bell(e)+'<div class="event-content"><h4 '+detailAttrs(e)+'>'+emoji(e)+' '+escapeHtml(e.name)+'</h4><div class="event-time">🕒 '+escapeHtml(timeText(e))+'</div><p class="event-summary">'+escapeHtml(summary(e))+'</p></div><img '+detailAttrs(e)+' class="card-img clickable" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""><div style="clear:both"></div></article>').join(''):'<div class="none">♡<br>libre</div>')+'</div>'}
  $('#weekGrid').innerHTML=html;
 }
 function renderSaved(){
@@ -67,9 +98,9 @@ function renderSaved(){
 }
 function renderNext(){
  const now=new Date(),next=EVENTS.filter(e=>start(e)>now).sort((a,b)=>start(a)-start(b))[0];if(!next){$('#nextBig').innerHTML='<p class="hint">No hay próximos eventos cargados.</p>';return}
- const diff=start(next)-now,days=Math.floor(diff/86400000),hrs=Math.floor((diff%86400000)/3600000);$('#nextBig').innerHTML='<div class="next-card"><span class="date-tag">'+emoji(next)+' '+escapeHtml(next.heading||'Evento')+'</span><h3>'+escapeHtml(next.name)+'</h3><div class="feature-time">🕒 '+escapeHtml(timeText(next))+'</div><p>'+escapeHtml(summary(next))+'</p><div class="countdown">En '+(days?days+' d ':'')+hrs+' h</div><img src="'+escapeHtml(next.image||defaultImage(next))+'" alt=""></div>';
+ const diff=start(next)-now,days=Math.floor(diff/86400000),hrs=Math.floor((diff%86400000)/3600000);$('#nextBig').innerHTML='<div class="next-card"><span class="date-tag">'+emoji(next)+' '+escapeHtml(next.heading||'Evento')+'</span><h3 '+detailAttrs(next)+'>'+escapeHtml(next.name)+'</h3><div class="feature-time">🕒 '+escapeHtml(timeText(next))+'</div><p>'+escapeHtml(summary(next))+'</p><div class="countdown">En '+(days?days+' d ':'')+hrs+' h</div><img '+detailAttrs(next)+' class="clickable" src="'+escapeHtml(next.image||defaultImage(next))+'" alt=""></div>';
 }
-function render(){renderToday();renderWeek();renderSaved();renderNext();wireBells()}
+function render(){renderToday();renderWeek();renderSaved();renderNext();wireBells();wireDetails()}
 async function copyReminder(f){const lead=+$('#lead').value,text='Recuérdame el evento de Pokémon GO “'+f.name+'” '+lead+' minutos antes. Empieza el '+fmt(new Date(f.start),{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'numeric',minute:'2-digit'})+' hora de Monterrey.';try{await navigator.clipboard.writeText(text);alert('♡ Copiado. Pégalo en ChatGPT para crear el recordatorio.')}catch{prompt('Copia esto:',text)}}
 function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}
 function downloadICS(f){const lead=+$('#lead').value,s=new Date(f.start),e=new Date(f.end||f.start),txt='BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:'+icsDate(s)+'\nDTEND:'+icsDate(e)+'\nSUMMARY:'+f.name.replace(/,/g,'\\,')+'\nBEGIN:VALARM\nTRIGGER:-PT'+lead+'M\nACTION:DISPLAY\nDESCRIPTION:'+f.name.replace(/,/g,'\\,')+'\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR';const blob=new Blob([txt],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pokemon-go-'+f.name.replace(/[^a-z0-9]+/gi,'-')+'.ics';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
@@ -80,3 +111,6 @@ $$('[data-jump]').forEach(b=>b.onclick=()=>{
  const el=document.getElementById(b.dataset.jump);
  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 });
+
+$$('[data-close-modal]').forEach(el=>el.onclick=closeEventDetail);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEventDetail()});
