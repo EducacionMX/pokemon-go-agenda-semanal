@@ -1,5 +1,5 @@
 const TZ='America/Monterrey';
-let EVENTS=[],weekOffset=0,filter='all';
+let EVENTS=[],weekOffset=0,filter='all',featureMode='today',upcomingClass='all';
 const fav=JSON.parse(localStorage.getItem('pokeweek:fav')||'{}');
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 function parse(v){if(!v)return null;const d=new Date(v);return isNaN(d)?null:d}
@@ -76,9 +76,22 @@ function openEventDetail(eventId){
 function closeEventDetail(){const m=$('#eventModal');m.classList.remove('open');m.setAttribute('aria-hidden','true');document.body.style.overflow=''}
 function wireDetails(){$('[data-event-detail]').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();openEventDetail(el.dataset.eventDetail)})}
 function wireBells(){$$('[data-bell]').forEach(b=>b.onclick=()=>{const e=EVENTS.find(x=>id(x)===b.dataset.bell);if(!e)return;if(fav[id(e)])delete fav[id(e)];else fav[id(e)]={id:id(e),name:e.name,start:e.start,end:e.end,image:e.image||defaultImage(e)};localStorage.setItem('pokeweek:fav',JSON.stringify(fav));render()})}
+function featureCard(e,now){
+ const active=now>=start(e)&&now<=end(e);
+ return '<article class="feature-card '+cat(e)+'">'+bell(e)+'<span class="'+(active?'live-tag':'date-tag')+'">'+(active?'● EN VIVO':emoji(e)+' '+(e.heading||'Evento'))+'</span><h3 '+detailAttrs(e)+'>'+escapeHtml(e.name)+'</h3><div class="feature-time">🕒 '+escapeHtml(timeText(e))+'</div><p>'+escapeHtml(summary(e))+'</p><img '+detailAttrs(e)+' class="event-img clickable" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""></article>';
+}
 function renderToday(){
- const now=new Date(), todays=EVENTS.filter(e=>start(e)&&same(start(e),now)&&end(e)>=now).slice(0,4);
- $('#todayCards').innerHTML=todays.length?todays.map(e=>'<article class="feature-card '+cat(e)+'">'+bell(e)+'<span class="'+(now>=start(e)&&now<=end(e)?'live-tag':'date-tag')+'">'+(now>=start(e)&&now<=end(e)?'● EN VIVO':emoji(e)+' '+(e.heading||'Evento'))+'</span><h3 '+detailAttrs(e)+'>'+escapeHtml(e.name)+'</h3><div class="feature-time">🕒 '+escapeHtml(timeText(e))+'</div><p>'+escapeHtml(summary(e))+'</p><img '+detailAttrs(e)+' class="event-img clickable" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""></article>').join(''):'<article class="feature-card"><span class="date-tag">♡ TRANQUILA</span><h3>No hay eventos activos hoy</h3><p>Mira la agenda semanal para preparar lo que viene.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></article>';
+ const now=new Date();
+ $('#upcomingFilter').style.display=featureMode==='upcoming'?'block':'none';
+ $('.capsule-tab').forEach(b=>b.classList.toggle('active',b.dataset.featureMode===featureMode));
+ let list=[];
+ if(featureMode==='today'){
+   list=EVENTS.filter(e=>start(e)&&same(start(e),now)&&end(e)>=now).slice(0,4);
+   $('#todayCards').innerHTML=list.length?list.map(e=>featureCard(e,now)).join(''):'<article class="feature-card"><span class="date-tag">♡ TRANQUILA</span><h3>No hay eventos activos hoy</h3><p>Mira “Próximos” para ver lo que viene.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></article>';
+ } else {
+   list=EVENTS.filter(e=>start(e)>now && (upcomingClass==='all'||cat(e)===upcomingClass)).sort((a,b)=>start(a)-start(b)).slice(0,3);
+   $('#todayCards').innerHTML=list.length?list.map(e=>featureCard(e,now)).join(''):'<article class="feature-card"><span class="date-tag">♡ SIN RESULTADOS</span><h3>No hay próximos eventos en esta clasificación</h3><p>Prueba otra categoría.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/700.png" alt=""></article>';
+ }
 }
 function renderWeek(){
  const ws=add(monday(new Date()),weekOffset*7),we=add(ws,7);
@@ -104,8 +117,10 @@ function render(){renderToday();renderWeek();renderSaved();renderNext();wireBell
 async function copyReminder(f){const lead=+$('#lead').value,text='Recuérdame el evento de Pokémon GO “'+f.name+'” '+lead+' minutos antes. Empieza el '+fmt(new Date(f.start),{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'numeric',minute:'2-digit'})+' hora de Monterrey.';try{await navigator.clipboard.writeText(text);alert('♡ Copiado. Pégalo en ChatGPT para crear el recordatorio.')}catch{prompt('Copia esto:',text)}}
 function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}
 function downloadICS(f){const lead=+$('#lead').value,s=new Date(f.start),e=new Date(f.end||f.start),txt='BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:'+icsDate(s)+'\nDTEND:'+icsDate(e)+'\nSUMMARY:'+f.name.replace(/,/g,'\\,')+'\nBEGIN:VALARM\nTRIGGER:-PT'+lead+'M\nACTION:DISPLAY\nDESCRIPTION:'+f.name.replace(/,/g,'\\,')+'\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR';const blob=new Blob([txt],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pokemon-go-'+f.name.replace(/[^a-z0-9]+/gi,'-')+'.ics';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
-$$('.chip').forEach(b=>b.onclick=()=>{$$('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderWeek();wireBells()});
-$('#prevWeek').onclick=()=>{weekOffset--;renderWeek();wireBells()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek();wireBells()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();wireBells();$('#weekGrid').scrollIntoView({behavior:'smooth'})};
+$('.chip').forEach(b=>b.onclick=()=>{$('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderWeek();wireBells();wireDetails()});
+$('[data-feature-mode]').forEach(b=>b.onclick=()=>{featureMode=b.dataset.featureMode;renderToday();wireBells();wireDetails()});
+$('#upcomingFilter').onchange=()=>{upcomingClass=$('#upcomingFilter').value;renderToday();wireBells();wireDetails()};
+$('#prevWeek').onclick=()=>{weekOffset--;renderWeek();wireBells();wireDetails()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek();wireBells();wireDetails()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();wireBells();wireDetails();$('#weekGrid').scrollIntoView({behavior:'smooth'})};
 load();
 $$('[data-jump]').forEach(b=>b.onclick=()=>{
  const el=document.getElementById(b.dataset.jump);
