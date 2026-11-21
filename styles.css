@@ -136,3 +136,6 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.24;ba
  .detail-list{grid-template-columns:1fr}
  .modal-close{width:40px;height:40px}
 }
+
+.version-badge{position:absolute;top:14px;right:16px;z-index:4;background:rgba(255,255,255,.88);border:1px solid #efddea;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:950;letter-spacing:.08em;color:#8d6d8a;box-shadow:0 6px 16px rgba(80,58,94,.10)}
+@media(max-width:520px){.version-badge{top:10px;right:10px;font-size:9px;padding:5px 8px}}
