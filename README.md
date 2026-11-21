@@ -1,31 +1,21 @@
-# Pokémon GO · Agenda semanal
+# 🌸 PokéWeek · Agenda semanal de Pokémon GO
 
-Agenda web ligera para consultar eventos de Pokémon GO semana a semana.
+Agenda visual y móvil para consultar eventos de Pokémon GO en hora de Monterrey.
 
-## Funciones
-- Vista semanal en horario de Monterrey.
-- Filtros para Community Day, incursiones, eventos Max y Spotlight Hour.
-- Actualización automática del feed al abrir la página y cada 30 minutos.
-- Campanas guardadas en el navegador.
-- Exportación de eventos a calendario (.ics) con alarma.
-- Generación de una solicitud lista para crear un recordatorio en ChatGPT.
+## V2
+- Diseño cute/cozy con Pokémon decorativos.
+- Bloque **Hoy**, agenda semanal, próximos eventos y campanitas.
+- Datos locales de respaldo para que la página nunca quede vacía.
+- GitHub Actions actualiza `data/live-events.json` automáticamente cada 6 horas desde ScrapedDuck/LeekDuck.
+- Filtros para Community Day, incursiones, Max, Spotlight y eventos.
+- Exportación a calendario (.ics) con alarma.
+- Botón para copiar una solicitud de recordatorio para ChatGPT.
+- Las campanitas se guardan en el navegador con localStorage.
 
-## Fuente de datos
-El panel consulta el feed comunitario de ScrapedDuck/LeekDuck:
-`https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json`
-
-## Publicar con GitHub Pages
-En GitHub abre:
-
-**Settings → Pages → Build and deployment → Source: Deploy from a branch**
-
-Después selecciona:
-- Branch: `main`
-- Folder: `/ (root)`
-
-La dirección esperada será:
-
+## Sitio
 https://educacionmx.github.io/pokemon-go-agenda-semanal/
 
-## Nota
-Las selecciones con campana se guardan mediante `localStorage`, por lo que son propias de cada navegador/dispositivo.
+## Datos
+El sitio intenta cargar primero `data/live-events.json`. Si ese archivo no está disponible, usa `data/events.json` como respaldo.
+
+Fuente comunitaria: https://github.com/bigfoott/ScrapedDuck
