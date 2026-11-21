@@ -76,3 +76,7 @@ function downloadICS(f){const lead=+$('#lead').value,s=new Date(f.start),e=new D
 $$('.chip').forEach(b=>b.onclick=()=>{$$('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderWeek();wireBells()});
 $('#prevWeek').onclick=()=>{weekOffset--;renderWeek();wireBells()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek();wireBells()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();wireBells();$('#weekGrid').scrollIntoView({behavior:'smooth'})};
 load();
+$$('[data-jump]').forEach(b=>b.onclick=()=>{
+ const el=document.getElementById(b.dataset.jump);
+ if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+});
