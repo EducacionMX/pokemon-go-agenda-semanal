@@ -78,5 +78,12 @@
   <button data-jump="nextBig">✨<span>Próximo</span></button>
 </nav>
 <script src="app.js"></script>
+<div class="event-modal" id="eventModal" aria-hidden="true">
+  <div class="event-modal-backdrop" data-close-modal></div>
+  <section class="event-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+    <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+    <div id="eventModalContent"></div>
+  </section>
+</div>
 </body>
 </html>
