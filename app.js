@@ -1,0 +1,60 @@
+const TZ='America/Monterrey';
+let EVENTS=[],weekOffset=0,filter='all';
+const fav=JSON.parse(localStorage.getItem('pokeweek:fav')||'{}');
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function parse(v){if(!v)return null;const d=new Date(v);return isNaN(d)?null:d}
+function start(e){return parse(e.start||e.startDate||e.startTime)} function end(e){return parse(e.end||e.endDate||e.endTime)||start(e)}
+function id(e){return e.eventID||e.id||e.slug||e.name+'|'+e.start}
+function fmt(d,o){return new Intl.DateTimeFormat('es-MX',{timeZone:TZ,...o}).format(d)}
+function key(d){return fmt(d,{year:'numeric',month:'2-digit',day:'2-digit'})}
+function monday(d){const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function add(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function same(a,b){return key(a)===key(b)}
+function cat(e){const t=(e.eventType||'event').toLowerCase();if(t.includes('community'))return'community-day';if(t.includes('max'))return'max';if(t.includes('raid'))return'raid';if(t.includes('spotlight'))return'spotlight';return'event'}
+function visible(e){return filter==='all'||cat(e)===filter}
+function timeText(e){const s=start(e),z=end(e);if(!s)return'Horario por confirmar';if(same(s,z))return fmt(s,{hour:'numeric',minute:'2-digit'})+' – '+fmt(z,{hour:'numeric',minute:'2-digit'});return fmt(s,{day:'numeric',month:'short'})+' → '+fmt(z,{day:'numeric',month:'short'})}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function emoji(e){return cat(e)==='community-day'?'🌸':cat(e)==='max'?'💜':cat(e)==='raid'?'⚡':cat(e)==='spotlight'?'✨':'🎀'}
+function defaultImage(e){const c=cat(e);return c==='community-day'?'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/624.png':c==='max'?'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/890.png':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'}
+async function load(){
+ let local=[];
+ try{const r=await fetch('data/live-events.json?'+Date.now());if(r.ok)local=await r.json()}catch{}
+ const arr=Array.isArray(local)?local:(local.events||[]);
+ const timed=arr.filter(e=>start(e));
+ if(timed.length){EVENTS=timed;$('#syncText').textContent='Sincronizado · '+fmt(new Date(),{hour:'numeric',minute:'2-digit'});localStorage.setItem('pokeweek:cache',JSON.stringify(EVENTS))}
+ else{try{const r=await fetch('data/events.json');EVENTS=await r.json();$('#syncText').textContent='Respaldo local activo'}catch{EVENTS=JSON.parse(localStorage.getItem('pokeweek:cache')||'[]');$('#syncText').textContent='Modo sin conexión'}}
+ EVENTS=EVENTS.filter(e=>start(e)).sort((a,b)=>start(a)-start(b));render();
+}
+function bell(e,cls=''){return '<button class="bell '+cls+' '+(fav[id(e)]?'on':'')+'" data-bell="'+escapeHtml(id(e))+'" title="Recordarme">🔔</button>'}
+function wireBells(){$$('[data-bell]').forEach(b=>b.onclick=()=>{const e=EVENTS.find(x=>id(x)===b.dataset.bell);if(!e)return;if(fav[id(e)])delete fav[id(e)];else fav[id(e)]={id:id(e),name:e.name,start:e.start,end:e.end,image:e.image||defaultImage(e)};localStorage.setItem('pokeweek:fav',JSON.stringify(fav));render()})}
+function renderToday(){
+ const now=new Date(), todays=EVENTS.filter(e=>start(e)&&same(start(e),now)&&end(e)>=now).slice(0,4);
+ $('#todayCards').innerHTML=todays.length?todays.map(e=>'<article class="feature-card '+cat(e)+'">'+bell(e)+'<span class="'+(now>=start(e)&&now<=end(e)?'live-tag':'date-tag')+'">'+(now>=start(e)&&now<=end(e)?'● EN VIVO':emoji(e)+' '+(e.heading||'Evento'))+'</span><h3>'+escapeHtml(e.name)+'</h3><p>'+escapeHtml(e.highlight||timeText(e))+'</p><img class="event-img" src="'+escapeHtml(e.image||defaultImage(e))+'" alt=""></article>').join(''):'<article class="feature-card"><span class="date-tag">♡ TRANQUILA</span><h3>No hay eventos activos hoy</h3><p>Mira la agenda semanal para preparar lo que viene.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></article>';
+}
+function renderWeek(){
+ const ws=add(monday(new Date()),weekOffset*7),we=add(ws,7);
+ $('#weekTitle').textContent=weekOffset===0?'Esta semana':fmt(ws,{day:'numeric',month:'short'})+' – '+fmt(add(we,-1),{day:'numeric',month:'short'});
+ let html='';
+ for(let i=0;i<7;i++){const d=add(ws,i),list=EVENTS.filter(e=>visible(e)&&start(e)<add(d,1)&&end(e)>=d);
+ html+='<div class="day-col '+(same(d,new Date())?'today':'')+'"><div class="day-head"><div class="day-name">'+fmt(d,{weekday:'short'})+'</div><div class="day-num">'+fmt(d,{day:'numeric'})+'</div></div>'+
+ (list.length?list.map(e=>'<article class="event-card '+cat(e)+'">'+bell(e)+'<h4>'+emoji(e)+' '+escapeHtml(e.name)+'</h4><div class="event-time">'+timeText(e)+'</div>'+(e.image?'<img src="'+escapeHtml(e.image)+'" alt="">':'')+'<div style="clear:both"></div></article>').join(''):'<div class="none">♡<br>libre</div>')+'</div>'}
+ $('#weekGrid').innerHTML=html;
+}
+function renderSaved(){
+ const a=Object.values(fav).sort((x,y)=>new Date(x.start)-new Date(y.start));$('#savedEmpty').style.display=a.length?'none':'block';
+ $('#savedList').innerHTML=a.map(f=>'<div class="saved"><div><strong>🔔 '+escapeHtml(f.name)+'</strong><small>'+fmt(new Date(f.start),{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})+'</small></div><div class="saved-actions"><button class="tiny" data-chat="'+escapeHtml(f.id)+'">ChatGPT</button><button class="tiny" data-cal="'+escapeHtml(f.id)+'">Calendario</button><button class="tiny" data-remove="'+escapeHtml(f.id)+'">✕</button></div></div>').join('');
+ $$('[data-remove]').forEach(b=>b.onclick=()=>{delete fav[b.dataset.remove];localStorage.setItem('pokeweek:fav',JSON.stringify(fav));render()});
+ $$('[data-chat]').forEach(b=>b.onclick=()=>copyReminder(fav[b.dataset.chat]));
+ $$('[data-cal]').forEach(b=>b.onclick=()=>downloadICS(fav[b.dataset.cal]));
+}
+function renderNext(){
+ const now=new Date(),next=EVENTS.filter(e=>start(e)>now).sort((a,b)=>start(a)-start(b))[0];if(!next){$('#nextBig').innerHTML='<p class="hint">No hay próximos eventos cargados.</p>';return}
+ const diff=start(next)-now,days=Math.floor(diff/86400000),hrs=Math.floor((diff%86400000)/3600000);$('#nextBig').innerHTML='<div class="next-card"><span class="date-tag">'+emoji(next)+' '+escapeHtml(next.heading||'Evento')+'</span><h3>'+escapeHtml(next.name)+'</h3><p>'+escapeHtml(next.highlight||timeText(next))+'</p><div class="countdown">En '+(days?days+' d ':'')+hrs+' h</div><img src="'+escapeHtml(next.image||defaultImage(next))+'" alt=""></div>';
+}
+function render(){renderToday();renderWeek();renderSaved();renderNext();wireBells()}
+async function copyReminder(f){const lead=+$('#lead').value,text='Recuérdame el evento de Pokémon GO “'+f.name+'” '+lead+' minutos antes. Empieza el '+fmt(new Date(f.start),{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'numeric',minute:'2-digit'})+' hora de Monterrey.';try{await navigator.clipboard.writeText(text);alert('♡ Copiado. Pégalo en ChatGPT para crear el recordatorio.')}catch{prompt('Copia esto:',text)}}
+function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}
+function downloadICS(f){const lead=+$('#lead').value,s=new Date(f.start),e=new Date(f.end||f.start),txt='BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:'+icsDate(s)+'\nDTEND:'+icsDate(e)+'\nSUMMARY:'+f.name.replace(/,/g,'\\,')+'\nBEGIN:VALARM\nTRIGGER:-PT'+lead+'M\nACTION:DISPLAY\nDESCRIPTION:'+f.name.replace(/,/g,'\\,')+'\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR';const blob=new Blob([txt],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pokemon-go-'+f.name.replace(/[^a-z0-9]+/gi,'-')+'.ics';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+$$('.chip').forEach(b=>b.onclick=()=>{$$('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderWeek();wireBells()});
+$('#prevWeek').onclick=()=>{weekOffset--;renderWeek();wireBells()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek();wireBells()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();wireBells();$('#weekGrid').scrollIntoView({behavior:'smooth'})};
+load();
