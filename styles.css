@@ -143,3 +143,17 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.24;ba
 .status-stack{position:relative;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:7px}
 .version-badge{background:rgba(255,255,255,.88);border:1px solid #efddea;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:950;letter-spacing:.08em;color:#8d6d8a;box-shadow:0 6px 16px rgba(80,58,94,.10)}
 @media(max-width:520px){.status-stack{align-items:flex-start;margin-top:14px}.version-badge{font-size:9px;padding:5px 8px}.sync-pill{margin-top:0}}
+
+/* V2.3.1 — Hoy / Próximos */
+.today-title{align-items:center}
+.today-switch{display:inline-flex;gap:4px;margin-top:5px;background:rgba(255,255,255,.72);border:1px solid #efdfea;border-radius:999px;padding:4px;box-shadow:0 7px 18px rgba(80,58,94,.07)}
+.capsule-tab{border:0;background:transparent;color:#8b7a91;border-radius:999px;padding:9px 14px;font-size:14px;font-weight:950;cursor:pointer;transition:.16s ease}
+.capsule-tab.active{background:linear-gradient(135deg,#f7c9df,#ddd2fa);color:#55445f;box-shadow:0 5px 13px rgba(91,66,102,.12)}
+.today-actions{display:flex;align-items:center;gap:10px}
+.upcoming-filter{display:none;border:1px solid #eadce8;background:rgba(255,255,255,.9);color:#665a70;border-radius:999px;padding:9px 12px;font-size:12px;font-weight:850;outline:none}
+@media(max-width:700px){
+ .today-title{align-items:flex-start;flex-direction:column}
+ .today-actions{width:100%;justify-content:space-between}
+ .upcoming-filter{max-width:70%;min-height:40px}
+ .capsule-tab{min-height:42px}
+}
