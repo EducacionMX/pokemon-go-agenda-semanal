@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pokémon GO · Agenda semanal</title>
+<style>
+:root{--bg:#08111f;--panel:#101b2d;--text:#eef5ff;--muted:#9eb0c8;--line:#21324a;--accent:#50d890;--gold:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#07101c,#0b1423);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+.app{max-width:1180px;margin:auto;padding:22px}.hero{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.hero h1{margin:0;font-size:clamp(28px,4vw,44px)}.hero p{color:var(--muted)}
+.badge,.btn,select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px 12px}.btn{cursor:pointer}.btn.active{border-color:#2f8a6d;background:#173f36}
+.toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0}.controls,.weeknav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.weeklabel{font-weight:700;min-width:200px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}.day{background:#101b2dcc;border:1px solid var(--line);border-radius:16px;padding:11px;min-height:180px}.day.today{outline:2px solid #2f8a6d}.dow{font-size:11px;color:var(--muted);text-transform:uppercase}.date{font-weight:800}
+.event{position:relative;background:#15243a;border:1px solid #263a56;border-radius:13px;padding:9px;margin-top:8px}.event.live{border-color:#2f8a6d}.event h3{font-size:13px;margin:0 28px 4px 0;line-height:1.25}.meta{font-size:11px;color:var(--muted)}.type{display:inline-block;margin-top:5px;font-size:10px;padding:3px 6px;border-radius:999px;background:#203753}.bell{position:absolute;right:6px;top:5px;border:0;background:none;color:#71839d;font-size:19px;cursor:pointer}.bell.on{color:var(--gold)}.empty{color:#687b95;font-size:12px;margin-top:8px}
+.foot{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:15px}.card{background:#101b2dcc;border:1px solid var(--line);border-radius:16px;padding:15px}.card h2{font-size:16px;margin:0 0 9px}.rem{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#0d1828;padding:10px;border-radius:11px;margin-top:7px}.rem b{font-size:13px}.rem small{display:block;color:var(--muted);margin-top:2px}.actions{display:flex;gap:5px;flex-wrap:wrap}.tiny{padding:6px 8px;font-size:11px}.note,.status{font-size:12px;color:#b8c7dc;line-height:1.5}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.day{min-height:auto}.foot{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="app">
+<div class="hero"><div><h1>Pokémon GO · Agenda semanal</h1><p>Eventos actualizados, en hora de Monterrey, con campanas y recordatorios.</p></div><div class="badge" id="sync">● Cargando…</div></div>
+<div class="toolbar"><div class="controls">
+<button class="btn active" data-filter="all">Todos</button><button class="btn" data-filter="community">Community Day</button><button class="btn" data-filter="raid">Incursiones</button><button class="btn" data-filter="max">Max</button><button class="btn" data-filter="spotlight">Spotlight</button>
+<select id="lead"><option value="15">15 min antes</option><option value="30">30 min antes</option><option value="60" selected>1 h antes</option><option value="180">3 h antes</option><option value="1440">1 día antes</option></select>
+</div><div class="weeknav"><button class="btn" id="prev">‹</button><div class="weeklabel" id="weekLabel"></div><button class="btn" id="next">›</button><button class="btn" id="today">Hoy</button></div></div>
+<div id="grid" class="grid"></div>
+<div class="foot"><div class="card"><h2>🔔 Mis eventos</h2><div id="rems"></div><div id="emptyFav" class="status">Pulsa una campana para guardar un evento.</div></div>
+<div class="card"><h2>Avisos</h2><div class="note">La campana guarda tu selección en este navegador. “Calendario” descarga un .ics con alarma. “ChatGPT” copia una solicitud lista para pegar aquí y crear un recordatorio real en ChatGPT.</div><div class="status" style="margin-top:10px">Fuente automática: ScrapedDuck/LeekDuck. El panel intenta refrescarse al abrir y cada 30 minutos.</div></div></div>
+</div>
+<script>
+const FEED='https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json',TZ='America/Monterrey';
+const S={events:[],week:0,filter:'all',fav:JSON.parse(localStorage.getItem('pogoFav')||'{}')};
+const fmt=(d,o)=>new Intl.DateTimeFormat('es-MX',{timeZone:TZ,...o}).format(d);
+const pd=v=>{let d=new Date(v);return isNaN(d)?null:d}, st=e=>pd(e.start||e.startDate||e.startTime), en=e=>pd(e.end||e.endDate||e.endTime)||st(e);
+const nm=e=>e.name||e.title||e.eventName||'Evento Pokémon GO', tp=e=>String(e.eventType||e.type||e.category||'event').toLowerCase(), id=e=>e.id||e.eventID||e.slug||nm(e)+'|'+st(e)?.toISOString();
+function mon(d){let x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x} function add(d,n){let x=new Date(d);x.setDate(x.getDate()+n);return x}
+function same(a,b){return fmt(a,{year:'numeric',month:'2-digit',day:'2-digit'})===fmt(b,{year:'numeric',month:'2-digit',day:'2-digit'})}
+function match(t,f){return f==='all'||(f==='community'&&t.includes('community'))||(f==='raid'&&t.includes('raid'))||(f==='max'&&t.includes('max'))||(f==='spotlight'&&t.includes('spotlight'))}
+async function load(){try{sync.textContent='● Actualizando…';let r=await fetch(FEED,{cache:'no-store'});if(!r.ok)throw 0;let j=await r.json();S.events=(Array.isArray(j)?j:(j.events||[])).filter(st);localStorage.setItem('pogoCache',JSON.stringify(S.events));sync.textContent='● Actualizado '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}catch{S.events=JSON.parse(localStorage.getItem('pogoCache')||'[]');sync.textContent='● Usando caché'}render()}
+function render(){let ws=add(mon(new Date()),S.week*7),we=add(ws,7);weekLabel.textContent=fmt(ws,{day:'numeric',month:'short'})+' – '+fmt(add(we,-1),{day:'numeric',month:'short',year:'numeric'});grid.innerHTML='';
+for(let i=0;i<7;i++){let d=add(ws,i),box=document.createElement('div');box.className='day'+(same(d,new Date())?' today':'');box.innerHTML='<div class="dow">'+fmt(d,{weekday:'short'})+'</div><div class="date">'+fmt(d,{day:'numeric',month:'short'})+'</div>';
+let es=S.events.filter(e=>match(tp(e),S.filter)&&st(e)<add(d,1)&&en(e)>=d).sort((a,b)=>st(a)-st(b));if(!es.length)box.innerHTML+='<div class="empty">Sin eventos</div>';
+es.forEach(e=>{let q=document.createElement('div'),k=id(e),live=new Date()>=st(e)&&new Date()<=en(e);q.className='event'+(live?' live':'');let times=same(st(e),en(e))?fmt(st(e),{hour:'2-digit',minute:'2-digit'})+'–'+fmt(en(e),{hour:'2-digit',minute:'2-digit'}):fmt(st(e),{day:'numeric',month:'short'})+' → '+fmt(en(e),{day:'numeric',month:'short'});q.innerHTML='<button class="bell '+(S.fav[k]?'on':'')+'">🔔</button><h3>'+esc(nm(e))+'</h3><div class="meta">'+times+(live?' · EN VIVO':'')+'</div><span class="type">'+esc(tp(e))+'</span>';q.querySelector('.bell').onclick=()=>tog(e);box.appendChild(q)});grid.appendChild(box)} renderFav()}
+function tog(e){let k=id(e);if(S.fav[k])delete S.fav[k];else S.fav[k]={id:k,name:nm(e),start:st(e).toISOString(),end:en(e).toISOString()};localStorage.setItem('pogoFav',JSON.stringify(S.fav));render()}
+function renderFav(){rems.innerHTML='';let a=Object.values(S.fav).sort((x,y)=>new Date(x.start)-new Date(y.start));emptyFav.style.display=a.length?'none':'block';a.forEach(f=>{let r=document.createElement('div');r.className='rem';r.innerHTML='<div><b>'+esc(f.name)+'</b><small>'+fmt(new Date(f.start),{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</small></div><div class="actions"><button class="btn tiny c">ChatGPT</button><button class="btn tiny i">Calendario</button><button class="btn tiny x">Quitar</button></div>';r.querySelector('.c').onclick=()=>copyReq(f);r.querySelector('.i').onclick=()=>ics(f);r.querySelector('.x').onclick=()=>{delete S.fav[f.id];localStorage.setItem('pogoFav',JSON.stringify(S.fav));render()};rems.appendChild(r)})}
+async function copyReq(f){let m=+lead.value,t='Recuérdame el evento de Pokémon GO "'+f.name+'" '+m+' minutos antes. Empieza el '+fmt(new Date(f.start),{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})+' hora de Monterrey.';try{await navigator.clipboard.writeText(t);alert('Solicitud copiada. Pégala en ChatGPT.')}catch{prompt('Copia esto:',t)}}
+function dt(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')} function ics(f){let m=+lead.value,s=new Date(f.start),e=new Date(f.end);let z='BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:'+dt(s)+'\nDTEND:'+dt(e)+'\nSUMMARY:'+f.name.replace(/,/g,'\\,')+'\nBEGIN:VALARM\nTRIGGER:-PT'+m+'M\nACTION:DISPLAY\nDESCRIPTION:'+f.name.replace(/,/g,'\\,')+'\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR';let b=new Blob([z],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pokemon_go_evento.ics';a.click()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-filter]').forEach(x=>x.classList.remove('active'));b.classList.add('active');S.filter=b.dataset.filter;render()});
+prev.onclick=()=>{S.week--;render()};next.onclick=()=>{S.week++;render()};today.onclick=()=>{S.week=0;render()};load();setInterval(load,1800000);
+</script></body></html>
