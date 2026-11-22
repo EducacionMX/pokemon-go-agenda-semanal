@@ -380,7 +380,7 @@ document.addEventListener('click', event => {
  const jump = event.target.closest('[data-jump]');
  if (jump) {
   const destination = jump.dataset.jump === 'savedSection' && !$('#pinnedSection').hidden
-   ? $('#pinnedSection')
+   ? $('#heroSection')
    : document.getElementById(jump.dataset.jump);
   destination?.scrollIntoView();
  }

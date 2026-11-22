@@ -33,7 +33,7 @@ a { color: inherit; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 3px solid #9356ba; outline-offset: 3px; }
-section[id], div[id="savedSection"] { scroll-margin-top: 18px; }
+section[id], #savedSection, #heroSection { scroll-margin-top: 18px; }
 .shell { width: min(1160px, calc(100% - 40px)); margin: auto; padding-bottom: 36px; }
 
 .masthead {
@@ -568,7 +568,14 @@ footer p { margin: 0 0 5px; }
 .sync-pill[data-status="warning"] .dot { background: #d79437; }
 .bonus-notes { padding-left: 1.4rem; color: var(--muted); font-size: .9rem; }
 
-.pinned-section { margin-bottom: 14px; }
+.pinned-section {
+  z-index: 1;
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0 clamp(14px, 5.6vw, 76px) clamp(12px, 2vw, 24px);
+  padding-top: 9px;
+  border-top: 1px dashed #dbb9d5;
+}
 .pinned-section h2 { margin: 0 0 8px 3px; font-size: .97rem; font-weight: 900; }
 .pinned-list {
   display: flex;

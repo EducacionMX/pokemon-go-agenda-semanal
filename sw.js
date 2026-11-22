@@ -1,5 +1,5 @@
 const PREFIX = 'pokeweek-';
-const CACHE = PREFIX + 'v3.4.0';
+const CACHE = PREFIX + 'v3.4.0-eevee';
 const ROOT = new URL(self.registration.scope);
 const DATA = new URL('data/events.normalized.json', ROOT);
 const SHELL = [
