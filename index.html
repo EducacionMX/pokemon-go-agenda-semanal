@@ -26,27 +26,27 @@
   </header>
 
   <section class="today-wrap" id="todaySection">
-    <div class="section-title today-title">
-      <div>
-        <span class="mini">✿ DESTACADOS</span>
-        <div class="today-switch" role="tablist" aria-label="Eventos destacados">
-          <button class="capsule-tab active" id="tabToday" data-feature-mode="today">Hoy</button>
-          <button class="capsule-tab" id="tabUpcoming" data-feature-mode="upcoming">Próximos</button>
-        </div>
-      </div>
-      <div class="today-actions">
-        <select class="upcoming-filter" id="upcomingFilter" aria-label="Clasificación de próximos eventos">
-          <option value="all">Todas las clasificaciones</option>
-          <option value="community-day">🌸 Community Day</option>
-          <option value="raid">⚡ Incursiones</option>
-          <option value="max">💜 Max</option>
-          <option value="spotlight">✨ Spotlight</option>
-          <option value="event">🎀 Otros eventos</option>
-        </select>
-        <button class="ghost" id="goToday">Volver a esta semana</button>
-      </div>
+    <div class="section-title">
+      <div><span class="mini">✿ AHORA</span><h2>Hoy</h2></div>
+      <button class="ghost" id="goToday">Volver a esta semana</button>
     </div>
-    <div id="todayCards" class="feature-grid"></div>
+    <div class="today-upcoming-grid">
+      <div id="todayCards" class="feature-grid today-main"></div>
+      <aside class="glass upcoming-box">
+        <div class="upcoming-box-head">
+          <div><span class="mini">✦ SIGUIENTES</span><h2>Próximos</h2></div>
+          <select class="upcoming-filter" id="upcomingFilter" aria-label="Clasificación de próximos eventos">
+            <option value="all">Todos</option>
+            <option value="community-day">🌸 Community</option>
+            <option value="raid">⚡ Incursiones</option>
+            <option value="max">💜 Max</option>
+            <option value="spotlight">✨ Spotlight</option>
+            <option value="event">🎀 Otros</option>
+          </select>
+        </div>
+        <div id="upcomingList" class="upcoming-list"></div>
+      </aside>
+    </div>
   </section>
 
   <section class="glass planner">
