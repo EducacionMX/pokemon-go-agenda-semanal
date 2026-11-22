@@ -7,7 +7,7 @@ Agenda semanal de Pokémon GO para Yuli.
 - Filtros por tipo de evento.
 - Ficha completa por evento.
 - PWA instalable y caché offline.
-- Las campanitas fijan eventos arriba y muestran cuánto falta para que empiecen. Los guardados y las preferencias se conservan en el dispositivo.
+- Las campanitas añaden eventos a la tarjeta Eventos guardados y muestran cuánto falta para que empiecen. Los guardados y las preferencias se conservan en el dispositivo.
 - Exportación iCalendar con aviso opcional en el calendario.
 - Los horarios sin desfase se interpretan como hora de Monterrey. Los horarios con desfase explícito se convierten a Monterrey.
 - Eventos normalizados y publicados cada 6 h desde ScrapedDuck/LeekDuck por el flujo Actualizar y publicar PokéWeek. El sitio muestra la fecha de generación del archivo publicado.

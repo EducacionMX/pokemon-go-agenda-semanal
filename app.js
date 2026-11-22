@@ -215,54 +215,38 @@ function savedEvents() {
  return Object.keys(fav).map(resolveEvent).filter(event => start(event)).sort((a, b) => start(a) - start(b));
 }
 
-function pinnedText(event, now) {
- const begins = event && start(event);
- if (!begins) return '';
- const remaining = begins - now;
- if (remaining <= 0) return now < end(event) ? 'En curso' : '';
+function savedCountdown(event, now) {
+ const remaining = start(event) - now;
+ if (remaining <= 0) return now < end(event) ? 'En curso' : 'Finalizado';
  const hours = Math.floor(remaining / 3600000);
  if (hours) return 'Falta ' + hours + (hours === 1 ? ' hora' : ' horas');
  return 'Falta ' + Math.ceil(remaining / 60000) + ' min';
-}
-
-function renderPinned() {
- const list = $('#pinnedList');
- const now = new Date();
- list.innerHTML = savedEvents().map(event => {
-  const text = pinnedText(event, now);
-  if (!text) return '';
-  const id = esc(event.id);
-  return '<li class="pinned-event" data-pin="' + id + '"><button class="pinned-open" data-event="' + id + '">' +
-   '<span class="pinned-name">' + esc(event.name) + '</span><span class="pinned-time">' + text + '</span></button>' +
-   '<button class="pinned-remove" data-remove="' + id + '" aria-label="Quitar campanita de ' + esc(event.name) + '">×</button></li>';
- }).join('');
- $('#pinnedSection').hidden = !list.children.length;
-}
-
-function refreshPinned() {
- const list = $('#pinnedList');
- const now = new Date();
- for (const item of Array.from(list.children)) {
-  const text = pinnedText(resolveEvent(item.dataset.pin), now);
-  if (text) item.querySelector('.pinned-time').textContent = text;
-  else item.remove();
- }
- $('#pinnedSection').hidden = !list.children.length;
 }
 
 function renderSaved() {
  const saved = savedEvents();
  const now = new Date();
  $('#savedEmpty').hidden = !!saved.length;
- $('#savedList').innerHTML = saved.map(e => {
-  const date = fmt(start(e), {weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit'});
-  const id = esc(e.id);
-  const calendar = start(e) > now ? '<a class="tiny calendar-link" href="#" download="pokeweek.ics" data-calendar="' + id + '">Calendario</a>' : '';
-  return '<div class="saved"><div><strong>🔔 ' + esc(e.name) + '</strong><small>' + esc(date) +
+ $('#savedList').innerHTML = saved.map(event => {
+  const date = fmt(start(event), {weekday:'short', day:'numeric', month:'short', hour:'numeric', minute:'2-digit'});
+  const id = esc(event.id);
+  const calendar = '<a class="tiny calendar-link" href="#" download="pokeweek.ics" data-calendar="' + id + '"' +
+   (start(event) > now ? '' : ' hidden') + '>Calendario</a>';
+  return '<li class="saved" data-saved-id="' + id + '"><div class="saved-info"><strong>' + esc(event.name) +
+   '</strong><small>' + esc(date) + '</small><small class="saved-time">' + savedCountdown(event, now) +
    '</small></div><div class="saved-actions"><button class="tiny" data-event="' + id + '">Ver</button>' +
-   calendar + '<button class="tiny" data-remove="' + id + '">Quitar</button></div></div>';
+   calendar + '<button class="tiny" data-remove="' + id + '" aria-label="Quitar ' + esc(event.name) + ' de guardados">Quitar</button></div></li>';
  }).join('');
- $('#lead').value = String(prefs.lead);
+}
+
+function refreshSavedCountdowns() {
+ const now = new Date();
+ for (const item of $$('#savedList [data-saved-id]')) {
+  const event = resolveEvent(item.dataset.savedId);
+  if (!event) continue;
+  item.querySelector('.saved-time').textContent = savedCountdown(event, now);
+  item.querySelector('[data-calendar]').hidden = start(event) <= now;
+ }
 }
 
 function eventLink(id) {
@@ -320,14 +304,14 @@ function prepareCalendarDownload(link) {
  setTimeout(() => URL.revokeObjectURL(url), 30000);
  return true;
 }
-function render(){renderPinned();renderToday();renderUpcoming();renderWeek();renderSaved();renderPrefs()}
+function render(){renderToday();renderUpcoming();renderWeek();renderSaved();renderPrefs()}
 
 function openEvent(id){const e=resolveEvent(id);if(!e||!start(e))return;const bonuses=e.bonuses||[],notes=e.bonusNotes||[],pokemon=e.pokemon||[];let html=`<div class="modal-hero"><div><span class="date-tag">${emoji(e.category)} ${esc(e.heading||'Evento')}</span><h2>${esc(e.name)}</h2><div class="modal-meta"><span class="modal-pill">🗓️ ${fmt(start(e),{weekday:'long',day:'numeric',month:'long'})}</span><span class="modal-pill">🕒 ${esc(timeText(e))}</span><span class="modal-pill">${esc(relativeLabel(e))}</span></div><p class="modal-summary">${esc(e.summary)}</p></div><img loading="lazy" src="${esc(img(e))}" alt=""></div><section class="modal-section"><h3>💡 Qué vale la pena hacer</h3><div class="detail-item">${esc(worth(e))}</div></section>`;if(bonuses.length)html+=`<section class="modal-section"><h3>✨ Bonos</h3><div class="detail-list">${bonuses.map(x=>`<div class="detail-item">✦ ${esc(x)}</div>`).join('')}</div></section>`;if(notes.length)html+='<ul class="bonus-notes">'+notes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>';if(pokemon.length)html+=`<section class="modal-section"><h3>🌸 Pokémon destacados</h3><div class="pokemon-list">${pokemon.slice(0,12).map(p=>`<div class="poke-chip">${p.image?`<img loading="lazy" src="${esc(p.image)}" alt="">`:''}<span>${esc(p.name)}${p.shiny===true?' ✨':''}</span></div>`).join('')}</div></section>`;if(e.hasSpawns||e.hasFieldResearch)html+=`<section class="modal-section"><h3>📌 Incluye</h3><div class="detail-list">${e.hasSpawns?'<div class="detail-item">Apariciones salvajes</div>':''}${e.hasFieldResearch?'<div class="detail-item">Investigación de campo</div>':''}</div></section>`;if(e.sourceUrl)html+=`<a class="modal-link" href="${esc(e.sourceUrl)}" target="_blank" rel="noopener">Ver fuente completa ↗</a>`;if(start(e)>new Date())html+='<div class="modal-section"><a class="soft-btn calendar-link" href="#" download="pokeweek.ics" data-calendar="'+esc(e.id)+'">Añadir al calendario</a></div>';$('#eventModalContent').innerHTML=html;openModal('eventModal')}
 function openModal(id){const m=$('#'+id);m.classList.add('open');m.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
 function closeModal(id){const m=$('#'+id);m.classList.remove('open');m.setAttribute('aria-hidden','true');document.body.style.overflow=''}
 
 function renderPrefs(){const cats=[['community-day','🌸 Community Day'],['raid','⚡ Incursiones'],['max','💜 Max'],['spotlight','✨ Spotlight'],['research','📚 Investigación'],['event','🎀 Otros']];$('#categoryPrefs').innerHTML=cats.map(([v,l])=>`<label class="pref-item"><span>${l}</span><input type="checkbox" value="${v}" ${prefs.categories.includes(v)?'checked':''}></label>`).join('');$('#settingsLead').value=String(prefs.lead)}
-function savePrefs(){prefs.categories=$$('#categoryPrefs input:checked').map(x=>x.value);prefs.lead=Number($('#settingsLead').value);saveJSON('pokeweek:prefs',prefs);$('#lead').value=String(prefs.lead);closeModal('settingsModal');renderUpcoming()}
+function savePrefs(){prefs.categories=$$('#categoryPrefs input:checked').map(x=>x.value);prefs.lead=Number($('#settingsLead').value);saveJSON('pokeweek:prefs',prefs);closeModal('settingsModal');renderUpcoming()}
 function toggleFav(event) {
  const isSaved = !Object.hasOwn(fav, event.id);
  if (isSaved) fav[event.id] = event;
@@ -338,7 +322,6 @@ function toggleFav(event) {
   button.setAttribute('aria-pressed', isSaved);
   button.setAttribute('aria-label', isSaved ? 'Quitar campana' : 'Guardar campana');
  }
- renderPinned();
  renderSaved();
 }
 
@@ -379,17 +362,14 @@ document.addEventListener('click', event => {
  }
  const jump = event.target.closest('[data-jump]');
  if (jump) {
-  const destination = jump.dataset.jump === 'savedSection' && !$('#pinnedSection').hidden
-   ? $('#heroSection')
-   : document.getElementById(jump.dataset.jump);
-  destination?.scrollIntoView();
+  document.getElementById(jump.dataset.jump)?.scrollIntoView();
  }
 });
 $$('.chip').forEach(b=>b.onclick=()=>{$$('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderWeek()});
-$('#upcomingFilter').onchange=e=>{upcomingClass=e.target.value;renderUpcoming()};$('#prevWeek').onclick=()=>{weekOffset--;renderWeek()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();$('#weekSection').scrollIntoView({behavior:'smooth'})};$('#lead').onchange=e=>{prefs.lead=Number(e.target.value);saveJSON('pokeweek:prefs',prefs)};$('#settingsBtn').onclick=()=>openModal('settingsModal');$('#mobileSettings').onclick=()=>openModal('settingsModal');$('#saveSettings').onclick=savePrefs;$('#installBtn').onclick=installApp;$('#versionBtn').onclick=()=>openModal('changelogModal');$('#changelogBtn').onclick=()=>openModal('changelogModal');document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal.open').forEach(m=>closeModal(m.id))});
+$('#upcomingFilter').onchange=e=>{upcomingClass=e.target.value;renderUpcoming()};$('#prevWeek').onclick=()=>{weekOffset--;renderWeek()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();$('#weekSection').scrollIntoView({behavior:'smooth'})};$('#settingsBtn').onclick=()=>openModal('settingsModal');$('#mobileSettings').onclick=()=>openModal('settingsModal');$('#saveSettings').onclick=savePrefs;$('#installBtn').onclick=installApp;$('#versionBtn').onclick=()=>openModal('changelogModal');$('#changelogBtn').onclick=()=>openModal('changelogModal');document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal.open').forEach(m=>closeModal(m.id))});
 function refreshTime() {
  if (document.hidden) return;
- refreshPinned();
+ refreshSavedCountdowns();
  if (!document.activeElement?.closest('#todayCards,#todayEvents,#weekGrid,#weekOngoing,#upcomingList')) {
   renderToday(); renderUpcoming(); renderWeek();
  }
