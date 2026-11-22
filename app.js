@@ -84,7 +84,7 @@ async function load(){
 function bell(e,cls=''){
   return `<button class="bell ${cls} ${fav[id(e)]?'on':''}" data-bell="${escapeHtml(id(e))}" title="Recordarme">🔔</button>`;
 }
-function detailAttrs(e){ return `data-event-detail="${escapeHtml(id(e))}" class="clickable"`; }
+function detailAttrs(e){ return `data-event-detail="${escapeHtml(id(e))}"`; }
 function featureCard(e,now){
   const active=now>=start(e)&&now<=end(e);
   return `<article class="feature-card ${cat(e)}">${bell(e)}<span class="${active?'live-tag':'date-tag'}">${active?'● EN VIVO':`${emoji(e)} ${escapeHtml(e.heading||'Evento')}`}</span><h3 ${detailAttrs(e)}>${escapeHtml(e.name)}</h3><div class="feature-time">🕒 ${escapeHtml(timeText(e))}</div><p>${escapeHtml(summary(e))}</p><img ${detailAttrs(e)} class="event-img clickable" src="${escapeHtml(e.image||defaultImage(e))}" alt=""></article>`;
