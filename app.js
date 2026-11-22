@@ -4,11 +4,19 @@ const isCompactWeek = matchMedia('(max-width: 680px)');
 let EVENTS=[],weekOffset=0,filter='all',upcomingClass='all',deferredInstall=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const DEFAULT_PREFS={lead:60,categories:['community-day','raid','max','spotlight','research','event']};
-let prefs=loadJSON('pokeweek:prefs',DEFAULT_PREFS);
+const prefs={...DEFAULT_PREFS,...loadJSON('pokeweek:prefs',{})};
+if (!Array.isArray(prefs.categories)) prefs.categories = DEFAULT_PREFS.categories;
 const fav=Object.assign(Object.create(null),loadJSON('pokeweek:fav',{}));
 
-function loadJSON(k,f){try{return JSON.parse(localStorage.getItem(k))||structuredClone(f)}catch{return structuredClone(f)}}
-function saveJSON(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function loadJSON(key, fallback) {
+ try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+ catch { return fallback; }
+}
+
+function saveJSON(key, value) {
+ try { localStorage.setItem(key, JSON.stringify(value)); }
+ catch { /* The current session keeps working if the browser blocks storage. */ }
+}
 const monterreyClock = new Intl.DateTimeFormat('en-CA', {
  timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
  hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
@@ -71,7 +79,7 @@ function relativeLabel(e, now = new Date()) {
 }
 function worth(event) {
  const names = (event.pokemon || []).slice(0, 3).map(pokemon => pokemon.name);
- const featured = new Intl.ListFormat('es-MX').format(names);
+ const featured = typeof Intl.ListFormat === 'function' ? new Intl.ListFormat('es-MX').format(names) : names.join(', ');
  const shiny = (event.pokemon || []).some(pokemon => pokemon.shiny);
  const bonus = (event.bonuses || []).find(text => /candy|stardust|hatch|xp/i.test(text));
  if (event.category === 'raid' && featured) {
@@ -115,7 +123,7 @@ async function load() {
   if (!response.ok) throw new Error(response.status);
   data = agendaData(await response.json());
   offline = response.headers.has('X-PokeWeek-Offline');
-  try { saveJSON('pokeweek:cache', data); } catch {}
+  saveJSON('pokeweek:cache', data);
  } catch {
   data = agendaData(loadJSON('pokeweek:cache', []) || []);
   offline = true;
@@ -126,7 +134,8 @@ async function load() {
  render();
 }
 
-function bell(e){return `<button class="bell ${Object.hasOwn(fav,e.id)?'on':''}" data-bell="${esc(e.id)}" aria-label="${Object.hasOwn(fav,e.id)?'Quitar campana':'Guardar campana'}" aria-pressed="${Object.hasOwn(fav,e.id)}">🔔</button>`}
+function hasFavorite(id) { return id in fav; }
+function bell(e){return `<button class="bell ${hasFavorite(e.id)?'on':''}" data-bell="${esc(e.id)}" aria-label="${hasFavorite(e.id)?'Quitar campana':'Guardar campana'}" aria-pressed="${hasFavorite(e.id)}">🔔</button>`}
 function featureCard(e,now){const active=now>=start(e)&&now<end(e);return `<article class="feature-card" data-category="${esc(e.category)}">${bell(e)}<span class="${active?'live-tag':'date-tag'}">${active?'● EN VIVO':emoji(e.category)+' '+esc(e.heading)}</span><h3><button class="event-name" data-event="${esc(e.id)}">${esc(e.name)}</button></h3><div class="feature-time">🕒 ${esc(timeText(e))}</div><div class="relative-badge">${esc(relativeLabel(e))}</div><p>${esc(e.summary)}</p><img data-event="${esc(e.id)}" class="event-img clickable" loading="lazy" decoding="async" src="${esc(img(e))}" alt=""></article>`}
 function renderToday() {
  const now = new Date();
@@ -208,7 +217,7 @@ function weekEventCard(event) {
   '" alt=""></article>';
 }
 function resolveEvent(id) {
- return EVENTS.find(event => event.id === id) || (Object.hasOwn(fav, id) ? fav[id] : null);
+ return EVENTS.find(event => event.id === id) || (hasFavorite(id) ? fav[id] : null);
 }
 
 function savedEvents() {
@@ -313,7 +322,7 @@ function closeModal(id){const m=$('#'+id);m.classList.remove('open');m.setAttrib
 function renderPrefs(){const cats=[['community-day','🌸 Community Day'],['raid','⚡ Incursiones'],['max','💜 Max'],['spotlight','✨ Spotlight'],['research','📚 Investigación'],['event','🎀 Otros']];$('#categoryPrefs').innerHTML=cats.map(([v,l])=>`<label class="pref-item"><span>${l}</span><input type="checkbox" value="${v}" ${prefs.categories.includes(v)?'checked':''}></label>`).join('');$('#settingsLead').value=String(prefs.lead)}
 function savePrefs(){prefs.categories=$$('#categoryPrefs input:checked').map(x=>x.value);prefs.lead=Number($('#settingsLead').value);saveJSON('pokeweek:prefs',prefs);closeModal('settingsModal');renderUpcoming()}
 function toggleFav(event) {
- const isSaved = !Object.hasOwn(fav, event.id);
+ const isSaved = !hasFavorite(event.id);
  if (isSaved) fav[event.id] = event;
  else delete fav[event.id];
  saveJSON('pokeweek:fav', fav);
@@ -376,7 +385,8 @@ function refreshTime() {
 }
 
 window.addEventListener('online', load);
-isCompactWeek.addEventListener('change', renderWeek);
+if (isCompactWeek.addEventListener) isCompactWeek.addEventListener('change', renderWeek);
+else isCompactWeek.addListener(renderWeek);
 document.addEventListener('visibilitychange', refreshTime);
 document.addEventListener('error', event => {
  const image = event.target;
