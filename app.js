@@ -61,7 +61,9 @@ function relativeLabel(e, now = new Date()) {
  const begins = start(e), ends = end(e);
  if (!begins || (now >= begins && now >= ends)) return '';
  const active = now >= begins;
- const minutes = Math.ceil(((active ? ends : begins) - now) / 60000);
+ const remaining = (active ? ends : begins) - now;
+ if (active && remaining > 2 * DAY) return 'TERMINE EN ' + Math.floor(remaining / DAY) + ' DÍAS';
+ const minutes = Math.ceil(remaining / 60000);
  const days = dayNumber(begins) - dayNumber(now);
  if (!active && days > 0 && minutes >= 60) return days === 1 ? 'MAÑANA' : 'EN ' + days + ' DÍAS';
  const amount = minutes < 60 ? minutes + ' MIN' : Math.floor(minutes / 60) + ' H';
