@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.3.0 · 21 de noviembre de 2026
+
+- Publicación automática del feed con fecha de actualización en hora de Monterrey.
+- Una sola tarjeta por evento en la semana, con un grupo para eventos de varios días.
+- Miniaturas locales y fichas con Pokémon de incursiones y condiciones de los bonos cuando la fuente los proporciona.
+
 ## v3.2.0 · 21 de noviembre de 2026
 
 - Portada con Eevee, colores pastel y tarjetas diferenciadas por categoría.

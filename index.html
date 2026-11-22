@@ -103,6 +103,10 @@
       <button class="chip" data-filter="research">📚 Investigación</button>
       <button class="chip" data-filter="event">🎀 Eventos</button>
     </div>
+    <section class="week-ongoing" id="weekOngoing" hidden aria-labelledby="weekOngoingTitle">
+      <h3 id="weekOngoingTitle">Eventos de varios días</h3>
+      <div class="week-ongoing-list" id="weekOngoingList"></div>
+    </section>
     <div class="week-grid" id="weekGrid"></div>
   </section>
 
@@ -115,18 +119,13 @@
       <p class="push-note" id="pushNote" role="status">Abre un evento y elige “Añadir al calendario” para programar su aviso.</p>
     </div>
 
-    <div class="glass panel">
-      <div class="section-title compact"><h2><span class="section-icon star" aria-hidden="true">♡</span> No te pierdas…</h2></div>
-      <div id="nextBig"></div>
-      <p class="source-note">Eventos de ScrapedDuck y Leek Duck.</p>
-    </div>
   </section>
 
   <footer>
     <p>Hecho con ♡ para Yuli</p>
     <div class="footer-meta">
-      <div class="sync-pill"><span class="dot" aria-hidden="true"></span><span id="syncText">Cargando eventos…</span></div>
-      <button class="version-pill" id="versionBtn">v3.2.0</button>
+      <div class="sync-pill" role="status"><span class="dot" aria-hidden="true"></span><span id="syncText">Cargando eventos…</span></div>
+      <button class="version-pill" id="versionBtn">v3.3.0</button>
       <a class="footer-link" href="compartir.html">Compartir agenda</a>
       <button class="footer-link" id="changelogBtn">Novedades</button>
     </div>
@@ -142,7 +141,7 @@
 
 <div class="modal" id="eventModal" aria-hidden="true"><div class="backdrop" data-close="eventModal"></div><section class="sheet" role="dialog"><button class="modal-close" aria-label="Cerrar" data-close="eventModal">×</button><div id="eventModalContent"></div></section></div>
 <div class="modal" id="settingsModal" aria-hidden="true"><div class="backdrop" data-close="settingsModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="settingsModal">×</button><h2>Preferencias</h2><p class="hint">Elige qué categorías quieres destacar en “Próximos”.</p><div id="categoryPrefs" class="pref-list"></div><label class="setting-row"><span>Aviso predeterminado</span><select id="settingsLead"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hora</option><option value="180">3 horas</option><option value="1440">1 día</option></select></label><button class="primary-btn" id="saveSettings">Guardar preferencias</button></section></div>
-<div class="modal" id="changelogModal" aria-hidden="true"><div class="backdrop" data-close="changelogModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="changelogModal">×</button><h2>PokéWeek v3.2.0</h2><div class="change-list"><p>♡ Portada con Eevee, paleta pastel y tarjetas más legibles en móvil.</p><p>✨ PWA instalable y modo offline.</p><p>⚡ Datos normalizados y miniaturas optimizadas.</p><p>🔔 Añade eventos al calendario con la anticipación de tus campanas.</p><p>🕒 Horarios de Monterrey aunque viajes y resumen de eventos activos.</p><p>🧪 Validación automática antes de publicar.</p></div></section></div>
+<div class="modal" id="changelogModal" aria-hidden="true"><div class="backdrop" data-close="changelogModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="changelogModal">×</button><h2>PokéWeek v3.3.0</h2><div class="change-list"><p>🗓️ Agenda semanal con una tarjeta por evento y fecha real de actualización.</p><p>♡ Portada con Eevee, paleta pastel y tarjetas más legibles en móvil.</p><p>✨ PWA instalable y modo offline.</p><p>⚡ Datos normalizados y miniaturas optimizadas.</p><p>🔔 Añade eventos al calendario con la anticipación de tus campanas.</p><p>🕒 Horarios de Monterrey aunque viajes y resumen de eventos activos.</p><p>🧪 Validación automática antes de publicar.</p></div></section></div>
 
 <script src="push-config.js"></script>
 <script src="app.js"></script>

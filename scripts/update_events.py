@@ -1,60 +1,147 @@
-import json, re, shutil, hashlib
-from pathlib import Path
-import requests
-from PIL import Image
+import argparse
+import hashlib
+import json
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from io import BytesIO
+from pathlib import Path
+from urllib.parse import urlparse
 
-SOURCE="https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json"
-ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/"data/events.normalized.json"
-IMGDIR=ROOT/"assets/event-images"
-IMGDIR.mkdir(parents=True,exist_ok=True)
+import requests
+from PIL import Image, ImageOps
 
-def cat(t=""):
-    t=t.lower()
-    if "community" in t:return "community-day"
-    if "max" in t:return "max"
-    if "raid" in t:return "raid"
-    if "spotlight" in t:return "spotlight"
-    if "research" in t:return "research"
-    return "event"
+SOURCE = "https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json"
+ROOT = Path(__file__).resolve().parents[1]
+CATEGORIES = {
+    "community": "community-day",
+    "max": "max",
+    "raid": "raid",
+    "spotlight": "spotlight",
+    "research": "research",
+}
+SUMMARIES = {
+    "community-day": "Community Day con apariciones aumentadas y contenido temporal.",
+    "max": "Combates Max disponibles durante esta ventana.",
+    "raid": "Incursiones disponibles durante el horario indicado.",
+    "spotlight": "Hora destacada con apariciones aumentadas y un bono temporal.",
+    "research": "Investigación temporal o especial disponible durante este periodo.",
+}
 
-def slug(s):
-    s=re.sub(r"[^a-z0-9]+","-",s.lower()).strip("-")
-    return s[:70] or hashlib.sha1(s.encode()).hexdigest()[:12]
 
-def summary(c,h):
-    return {"community-day":"Community Day con apariciones aumentadas, bonus especiales y contenido temporal.","max":"Combates Max disponibles durante esta ventana.","raid":"Incursiones especiales disponibles durante el horario indicado.","spotlight":"Hora destacada con apariciones aumentadas y bonus temporal.","research":"Investigación temporal o especial disponible durante este periodo."}.get(c,f"{h or 'Evento'} activo durante este periodo.")
+def is_https(url):
+    return isinstance(url, str) and urlparse(url).scheme == "https" and bool(urlparse(url).hostname)
 
-def cache_image(url,event_id):
-    if not url:return None
+
+def cache_image(event, output):
+    url = event["image"]
+    if not is_https(url):
+        return None
     try:
-        r=requests.get(url,timeout=20,headers={"User-Agent":"PokeWeek/3.0"});r.raise_for_status()
-        im=Image.open(BytesIO(r.content)).convert("RGB");im.thumbnail((700,500))
-        path=IMGDIR/f"{slug(event_id)}.webp";im.save(path,"WEBP",quality=80,method=6)
-        return str(path.relative_to(ROOT)).replace("\\","/")
-    except Exception as ex:
-        print("image warning",event_id,ex);return None
+        response = requests.get(url, timeout=(8, 18))
+        response.raise_for_status()
+        with Image.open(BytesIO(response.content)) as source:
+            image = ImageOps.exif_transpose(source).convert("RGBA")
+        image.thumbnail((640, 420))
+        encoded = BytesIO()
+        image.save(encoded, "WEBP", quality=78, method=5)
+        payload = encoded.getvalue()
+        key = hashlib.sha256(url.encode() + payload).hexdigest()[:20]
+        relative = Path("assets/event-images") / f"{key}.webp"
+        (output / relative).write_bytes(payload)
+        return relative.as_posix()
+    except (OSError, ValueError, requests.RequestException) as error:
+        print(f"Miniatura no disponible para {event['id']}: {error}")
+        return None
 
-raw=requests.get(SOURCE,timeout=30).json()
-shutil.rmtree(IMGDIR,ignore_errors=True);IMGDIR.mkdir(parents=True,exist_ok=True)
-events=[]
-for e in raw:
-    if not e.get("start"):continue
-    x=e.get("extraData") or {};bonuses=[];pokemon=[]
-    cd=x.get("communityday") or {}
-    for b in cd.get("bonuses") or []:
-        if b.get("text"):bonuses.append(b["text"])
-    for p in cd.get("spawns") or []:
-        if p.get("name"):pokemon.append({"name":p["name"],"image":p.get("image"),"shiny":p.get("canBeShiny")})
-    sp=x.get("spotlight") or {}
-    if sp.get("bonus"):bonuses.append(sp["bonus"])
-    for p in sp.get("list") or []:
-        if p.get("name"):pokemon.append({"name":p["name"],"image":p.get("image"),"shiny":p.get("canBeShiny")})
-    event_id=str(e.get("eventID") or e.get("id") or e.get("name"))
-    c=cat(e.get("eventType",""))
-    events.append({"id":event_id,"name":e.get("name","Evento Pokémon GO"),"category":c,"type":e.get("eventType","event"),"heading":e.get("heading","Evento"),"start":e["start"],"end":e.get("end") or e["start"],"image":e.get("image"),"imageLocal":cache_image(e.get("image"),event_id),"sourceUrl":e.get("link"),"summary":summary(c,e.get("heading")),"bonuses":list(dict.fromkeys(bonuses)),"pokemon":pokemon,"hasSpawns":bool((x.get("generic") or {}).get("hasSpawns")),"hasFieldResearch":bool((x.get("generic") or {}).get("hasFieldResearchTasks"))})
-events.sort(key=lambda e:e["start"])
-OUT.parent.mkdir(exist_ok=True)
-OUT.write_text(json.dumps(events,ensure_ascii=False,indent=2),encoding="utf-8")
-print("normalized",len(events))
+
+def event_details(extra):
+    community = extra.get("communityday") or {}
+    spotlight = extra.get("spotlight") or {}
+    raid = extra.get("raidbattles") or {}
+    bonuses = [bonus["text"] for bonus in community.get("bonuses") or [] if bonus.get("text")]
+    if spotlight.get("bonus"):
+        bonuses.append(spotlight["bonus"])
+    featured = {}
+    shiny_names = {p.get("name") for p in (community.get("shinies") or []) + (raid.get("shinies") or [])}
+    raid_pokemon = raid.get("bosses") or raid.get("shinies") or []
+    spotlight_pokemon = spotlight.get("list") or ([spotlight] if spotlight.get("name") else [])
+    for item in (community.get("spawns") or []) + spotlight_pokemon + raid_pokemon:
+        name = item.get("name")
+        if not name:
+            continue
+        featured[name] = {
+            "name": name,
+            "image": item.get("image") if is_https(item.get("image")) else None,
+            "shiny": item.get("canBeShiny") is True or name in shiny_names,
+        }
+    return {
+        "bonuses": list(dict.fromkeys(bonuses)),
+        "bonusNotes": community.get("bonusDisclaimers") or [],
+        "pokemon": list(featured.values()),
+    }
+
+
+def normalize(raw):
+    if not isinstance(raw, list):
+        raise ValueError("Se esperaba una lista de eventos")
+    events = []
+    seen = set()
+    for entry in raw:
+        if not entry.get("start"):
+            continue
+        event_id = str(entry.get("eventID") or entry.get("id") or entry.get("name") or "")
+        if not event_id or not entry.get("name") or event_id in seen:
+            raise ValueError(f"Identificador repetido o evento incompleto: {event_id}")
+        seen.add(event_id)
+        event_type = entry.get("eventType") or "event"
+        category = next((value for token, value in CATEGORIES.items() if token in event_type.lower()), "event")
+        extra = entry.get("extraData") or {}
+        generic = extra.get("generic") or {}
+        start = entry["start"]
+        end = entry.get("end") or start
+        for stamp in (start, end):
+            datetime.fromisoformat(stamp)
+        events.append({
+            "id": event_id,
+            "name": entry["name"],
+            "category": category,
+            "type": event_type,
+            "heading": entry.get("heading") or "Evento",
+            "start": start,
+            "end": end,
+            "image": entry.get("image") if is_https(entry.get("image")) else None,
+            "sourceUrl": entry.get("link") if is_https(entry.get("link")) else None,
+            "summary": SUMMARIES.get(category, "Evento disponible durante este periodo."),
+            "hasSpawns": bool(generic.get("hasSpawns")),
+            "hasFieldResearch": bool(generic.get("hasFieldResearchTasks")),
+            **event_details(extra),
+        })
+    if not events:
+        raise ValueError("La fuente no entregó eventos con horario")
+    return sorted(events, key=lambda event: event["start"])
+
+
+def update(output):
+    response = requests.get(SOURCE, timeout=30, headers={"Cache-Control": "no-cache"})
+    response.raise_for_status()
+    events = normalize(response.json())
+    updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    (output / "assets/event-images").mkdir(parents=True, exist_ok=True)
+    unique_images = {event["image"]: event for event in events if event["image"]}
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        images = dict(zip(unique_images, pool.map(lambda event: cache_image(event, output), unique_images.values())))
+    for event in events:
+        event["imageLocal"] = images.get(event["image"])
+    payload = {"updatedAt": updated_at, "events": events}
+    agenda = output / "data/events.normalized.json"
+    agenda.parent.mkdir(parents=True, exist_ok=True)
+    pending = agenda.with_suffix(".tmp")
+    pending.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    pending.replace(agenda)
+    print(f"Eventos: {len(events)} · miniaturas locales: {sum(bool(e['imageLocal']) for e in events)}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generar la agenda y las miniaturas de PokéWeek.")
+    parser.add_argument("--output", type=Path, default=ROOT)
+    update(parser.parse_args().output.resolve())

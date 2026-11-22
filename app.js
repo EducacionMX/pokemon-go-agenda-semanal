@@ -67,24 +67,60 @@ function relativeLabel(e, now = new Date()) {
  const amount = minutes < 60 ? minutes + ' MIN' : Math.floor(minutes / 60) + ' H';
  return (active ? 'TERMINA EN ' : 'EN ') + amount;
 }
-function worth(e){if(e.category==='community-day')return'Prioriza capturas, shiny, caramelos y el ataque exclusivo si aplica.';if(e.category==='raid')return'Útil para gastar pases, buscar buenos IV y farmear caramelos XL.';if(e.category==='max')return'Conviene reunir Partículas Max y preparar counters antes de entrar.';if(e.category==='spotlight')return'Ideal para aprovechar el bonus de la hora y farmear rápidamente.';if(e.category==='research')return'Completa los objetivos antes del cierre para no perder recompensas.';return'Consulta los bonus y decide si vale la pena dedicar tiempo al evento.'}
+function worth(event) {
+ const names = (event.pokemon || []).slice(0, 3).map(pokemon => pokemon.name);
+ const featured = new Intl.ListFormat('es-MX').format(names);
+ const shiny = (event.pokemon || []).some(pokemon => pokemon.shiny);
+ const bonus = (event.bonuses || []).find(text => /candy|stardust|hatch|xp/i.test(text));
+ if (event.category === 'raid' && featured) {
+  return 'Reserva tus pases para ' + featured + '.' +
+   (shiny ? ' La fuente confirma al menos una variante shiny entre los destacados.' : ' Consulta el horario antes de organizar tu equipo.');
+ }
+ if (event.category === 'spotlight' && featured) {
+  return 'Aprovecha la hora para capturar a ' + featured + (bonus ? '. Bono durante el evento: ' + bonus + '.' : '.');
+ }
+ if (event.category === 'community-day' && featured) {
+  return 'Prioriza capturas de ' + featured + (bonus ? '. Revisa este bono: ' + bonus + '.' : '.');
+ }
+ if (event.category === 'max') return 'Reúne Partículas Max antes de que empiece el evento.';
+ if (event.hasFieldResearch) return 'Revisa las tareas de investigación de campo y recoge las recompensas antes del cierre.';
+ if (event.category === 'research') return 'Completa y reclama las recompensas de la investigación antes de que termine.';
+ if (event.category === 'raid') return 'Consulta la ficha de la fuente para elegir las incursiones que te interesan antes de gastar pases.';
+ return 'Consulta los horarios y los detalles disponibles en la fuente del evento.';
+}
+
+function agendaData(data) {
+ if (Array.isArray(data)) return {events: data, updatedAt: null};
+ if (!Array.isArray(data?.events)) throw new Error('Formato de agenda inesperado');
+ return data;
+}
+
+function showDataStatus(updatedAt, offline) {
+ const updated = parseDate(updatedAt);
+ const status = $('#syncText');
+ const old = updated && Date.now() - updated.getTime() > 12 * 60 * 60 * 1000;
+ const date = updated ? fmt(updated, {day:'numeric', month:'short', hour:'numeric', minute:'2-digit'}) : '';
+ status.textContent = (offline ? 'Modo offline · ' : old ? 'Datos atrasados · ' : '') +
+  (date ? 'Eventos actualizados: ' + date + ' (Monterrey)' : 'Fecha de actualización no disponible');
+ status.parentElement.dataset.status = offline || old || !updated ? 'warning' : 'fresh';
+}
 
 async function load() {
+ let data;
+ let offline = false;
  try {
   const response = await fetch(DATA_URL, {cache: 'no-cache'});
   if (!response.ok) throw new Error(response.status);
-  const data = await response.json();
-  if (!Array.isArray(data)) throw new Error('Formato de agenda inesperado');
-  EVENTS = data;
-  try { saveJSON('pokeweek:cache', EVENTS); } catch {}
-  $('#syncText').textContent = response.headers.has('X-PokeWeek-Offline') ? 'Modo offline' :
-   'Consultado · ' + fmt(new Date(), {hour: 'numeric', minute: '2-digit'});
+  data = agendaData(await response.json());
+  offline = response.headers.has('X-PokeWeek-Offline');
+  try { saveJSON('pokeweek:cache', data); } catch {}
  } catch {
-  EVENTS = loadJSON('pokeweek:cache', []);
-  $('#syncText').textContent = EVENTS.length ? 'Modo offline' : 'Sin datos disponibles';
+  data = agendaData(loadJSON('pokeweek:cache', []) || []);
+  offline = true;
  }
  parsedDates.clear();
- EVENTS = EVENTS.filter(e => start(e)).sort((a, b) => start(a) - start(b));
+ EVENTS = data.events.filter(e => start(e)).sort((a, b) => start(a) - start(b));
+ showDataStatus(data.updatedAt, offline);
  render();
  checkReminders();
 }
@@ -124,12 +160,31 @@ function renderWeek() {
  $('#weekTitle').textContent = weekOffset === 0 ? 'Esta semana' : first + ' – ' + last;
  grid.dataset.week = monday;
  grid.dataset.layout = isCompactWeek.matches;
+ const weekStart = inMonterrey(monday * DAY);
+ const weekEnd = inMonterrey((monday + 7) * DAY);
+ const severalDays = [];
+ const eventsByDay = new Map();
+ for (const event of EVENTS) {
+  if (filter !== 'all' && event.category !== filter) continue;
+  const begins = start(event);
+  const finishes = end(event);
+  if (begins >= weekEnd || (begins < weekStart && finishes <= weekStart)) continue;
+  const firstDay = dayNumber(begins);
+  const lastDay = dayNumber(finishes > begins ? new Date(+finishes - 1) : begins);
+  if (lastDay - firstDay >= 2) {
+   severalDays.push(event);
+   continue;
+  }
+  const day = Math.max(firstDay, monday);
+  if (!eventsByDay.has(day)) eventsByDay.set(day, []);
+  eventsByDay.get(day).push(event);
+ }
+ $('#weekOngoing').hidden = !severalDays.length;
+ $('#weekOngoingList').innerHTML = severalDays.map(weekEventCard).join('');
  grid.innerHTML = Array.from({length:7}, (_, index) => {
   const day = monday + index;
   const begins = inMonterrey(day * DAY);
-  const ends = inMonterrey((day + 1) * DAY);
-  const events = EVENTS.filter(e => (filter === 'all' || e.category === filter)
-   && start(e) < ends && (end(e) > begins || start(e) >= begins));
+  const events = eventsByDay.get(day) || [];
   const isToday = day === today;
   const open = retainedDays ? openDays.has(day) : !isCompactWeek.matches || (weekOffset === 0 ? isToday : index === 0);
   const weekdayName = fmt(begins, {weekday:'short'});
@@ -225,10 +280,9 @@ function prepareCalendarDownload(link) {
  setTimeout(() => URL.revokeObjectURL(url), 30000);
  return true;
 }
-function renderNext(){const now=new Date(),e=EVENTS.find(x=>start(x)>now);if(!e){$('#nextBig').innerHTML='<p class="hint">No hay próximos eventos.</p>';return}$('#nextBig').innerHTML=`<div class="next-card"><span class="date-tag">${emoji(e.category)} ${esc(e.heading)}</span><h3><button class="event-name" data-event="${esc(e.id)}">${esc(e.name)}</button></h3><div class="feature-time">🕒 ${esc(timeText(e))}</div><div class="relative-badge">${esc(relativeLabel(e))}</div><p>${esc(e.summary)}</p><img data-event="${esc(e.id)}" class="clickable" loading="lazy" decoding="async" src="${esc(img(e))}" alt=""></div>`}
-function render(){renderToday();renderUpcoming();renderWeek();renderSaved();renderNext();renderPrefs()}
+function render(){renderToday();renderUpcoming();renderWeek();renderSaved();renderPrefs()}
 
-function openEvent(id){const e=resolveEvent(id);if(!e||!start(e))return;const bonuses=e.bonuses||[],pokemon=e.pokemon||[];let html=`<div class="modal-hero"><div><span class="date-tag">${emoji(e.category)} ${esc(e.heading||'Evento')}</span><h2>${esc(e.name)}</h2><div class="modal-meta"><span class="modal-pill">🗓️ ${fmt(start(e),{weekday:'long',day:'numeric',month:'long'})}</span><span class="modal-pill">🕒 ${esc(timeText(e))}</span><span class="modal-pill">${esc(relativeLabel(e))}</span></div><p class="modal-summary">${esc(e.summary)}</p></div><img loading="lazy" src="${esc(img(e))}" alt=""></div><section class="modal-section"><h3>💡 Qué vale la pena hacer</h3><div class="detail-item">${esc(worth(e))}</div></section>`;if(bonuses.length)html+=`<section class="modal-section"><h3>✨ Bonos</h3><div class="detail-list">${bonuses.map(x=>`<div class="detail-item">✦ ${esc(x)}</div>`).join('')}</div></section>`;if(pokemon.length)html+=`<section class="modal-section"><h3>🌸 Pokémon destacados</h3><div class="pokemon-list">${pokemon.slice(0,12).map(p=>`<div class="poke-chip">${p.image?`<img loading="lazy" src="${esc(p.image)}" alt="">`:''}<span>${esc(p.name)}${p.shiny===true?' ✨':''}</span></div>`).join('')}</div></section>`;if(e.hasSpawns||e.hasFieldResearch)html+=`<section class="modal-section"><h3>📌 Incluye</h3><div class="detail-list">${e.hasSpawns?'<div class="detail-item">Apariciones salvajes</div>':''}${e.hasFieldResearch?'<div class="detail-item">Investigación de campo</div>':''}</div></section>`;if(e.sourceUrl)html+=`<a class="modal-link" href="${esc(e.sourceUrl)}" target="_blank" rel="noopener">Ver fuente completa ↗</a>`;if(start(e)>new Date())html+='<div class="modal-section"><a class="soft-btn calendar-link" href="#" download="pokeweek.ics" data-calendar="'+esc(e.id)+'">Añadir al calendario</a></div>';$('#eventModalContent').innerHTML=html;openModal('eventModal')}
+function openEvent(id){const e=resolveEvent(id);if(!e||!start(e))return;const bonuses=e.bonuses||[],notes=e.bonusNotes||[],pokemon=e.pokemon||[];let html=`<div class="modal-hero"><div><span class="date-tag">${emoji(e.category)} ${esc(e.heading||'Evento')}</span><h2>${esc(e.name)}</h2><div class="modal-meta"><span class="modal-pill">🗓️ ${fmt(start(e),{weekday:'long',day:'numeric',month:'long'})}</span><span class="modal-pill">🕒 ${esc(timeText(e))}</span><span class="modal-pill">${esc(relativeLabel(e))}</span></div><p class="modal-summary">${esc(e.summary)}</p></div><img loading="lazy" src="${esc(img(e))}" alt=""></div><section class="modal-section"><h3>💡 Qué vale la pena hacer</h3><div class="detail-item">${esc(worth(e))}</div></section>`;if(bonuses.length)html+=`<section class="modal-section"><h3>✨ Bonos</h3><div class="detail-list">${bonuses.map(x=>`<div class="detail-item">✦ ${esc(x)}</div>`).join('')}</div></section>`;if(notes.length)html+='<ul class="bonus-notes">'+notes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>';if(pokemon.length)html+=`<section class="modal-section"><h3>🌸 Pokémon destacados</h3><div class="pokemon-list">${pokemon.slice(0,12).map(p=>`<div class="poke-chip">${p.image?`<img loading="lazy" src="${esc(p.image)}" alt="">`:''}<span>${esc(p.name)}${p.shiny===true?' ✨':''}</span></div>`).join('')}</div></section>`;if(e.hasSpawns||e.hasFieldResearch)html+=`<section class="modal-section"><h3>📌 Incluye</h3><div class="detail-list">${e.hasSpawns?'<div class="detail-item">Apariciones salvajes</div>':''}${e.hasFieldResearch?'<div class="detail-item">Investigación de campo</div>':''}</div></section>`;if(e.sourceUrl)html+=`<a class="modal-link" href="${esc(e.sourceUrl)}" target="_blank" rel="noopener">Ver fuente completa ↗</a>`;if(start(e)>new Date())html+='<div class="modal-section"><a class="soft-btn calendar-link" href="#" download="pokeweek.ics" data-calendar="'+esc(e.id)+'">Añadir al calendario</a></div>';$('#eventModalContent').innerHTML=html;openModal('eventModal')}
 function openModal(id){const m=$('#'+id);m.classList.add('open');m.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
 function closeModal(id){const m=$('#'+id);m.classList.remove('open');m.setAttribute('aria-hidden','true');document.body.style.overflow=''}
 
@@ -238,7 +292,7 @@ function toggleFav(e) {
  if (Object.hasOwn(fav, e.id)) delete fav[e.id];
  else fav[e.id] = e;
  saveJSON('pokeweek:fav', fav);
- renderSaved(); renderToday(); renderUpcoming(); renderWeek(); renderNext();
+ renderSaved(); renderToday(); renderUpcoming(); renderWeek();
  checkReminders();
 }
 
@@ -328,8 +382,8 @@ $$('.chip').forEach(b=>b.onclick=()=>{$$('.chip').forEach(x=>x.classList.remove(
 $('#upcomingFilter').onchange=e=>{upcomingClass=e.target.value;renderUpcoming()};$('#prevWeek').onclick=()=>{weekOffset--;renderWeek()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();$('#weekSection').scrollIntoView({behavior:'smooth'})};$('#lead').onchange=e=>{prefs.lead=Number(e.target.value);saveJSON('pokeweek:prefs',prefs);checkReminders()};$('#settingsBtn').onclick=()=>openModal('settingsModal');$('#mobileSettings').onclick=()=>openModal('settingsModal');$('#saveSettings').onclick=savePrefs;$('#notifyBtn').onclick=enableNotifications;$('#installBtn').onclick=installApp;$('#versionBtn').onclick=()=>openModal('changelogModal');$('#changelogBtn').onclick=()=>openModal('changelogModal');document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal.open').forEach(m=>closeModal(m.id))});
 function refreshTime() {
  if (document.hidden) return;
- if (!document.activeElement?.closest('#todayCards,#todayEvents,#weekGrid,#upcomingList,#nextBig')) {
-  renderToday(); renderUpcoming(); renderWeek(); renderNext();
+ if (!document.activeElement?.closest('#todayCards,#todayEvents,#weekGrid,#weekOngoing,#upcomingList')) {
+  renderToday(); renderUpcoming(); renderWeek();
  }
  checkReminders();
 }
