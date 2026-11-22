@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#ffd9ea"/><stop offset=".55" stop-color="#f4ecff"/><stop offset="1" stop-color="#d9efff"/>
+ </linearGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#7b5b8a" flood-opacity=".18"/></filter>
+</defs>
+<rect width="1200" height="630" rx="48" fill="url(#bg)"/>
+<circle cx="180" cy="315" r="138" fill="#fff" opacity=".92" filter="url(#shadow)"/>
+<circle cx="180" cy="315" r="112" fill="#fff" stroke="#4d395c" stroke-width="10"/>
+<path d="M68 315a112 112 0 0 1 224 0H68z" fill="#ef476f"/>
+<rect x="68" y="304" width="224" height="22" fill="#4d395c"/>
+<circle cx="180" cy="315" r="38" fill="#fff" stroke="#4d395c" stroke-width="12"/>
+<circle cx="180" cy="315" r="18" fill="#fff" stroke="#4d395c" stroke-width="4"/>
+<g fill="#f6c85f">
+ <path d="M355 112l10 28 28 10-28 10-10 28-10-28-28-10 28-10z"/>
+ <path d="M1050 118l8 22 22 8-22 8-8 22-8-22-22-8 22-8z"/>
+ <path d="M990 490l9 25 25 9-25 9-9 25-9-25-25-9 25-9z"/>
+</g>
+<text x="390" y="295" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="800" fill="#70508f">Yuli Master</text>
+<text x="390" y="410" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="900" fill="#ef477f">Pokemon</text>
+<text x="395" y="475" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#7a6c84">PokéWeek · Agenda semanal de Pokémon GO</text>
+</svg>
