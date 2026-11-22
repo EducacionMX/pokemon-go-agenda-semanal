@@ -124,7 +124,6 @@ async function load() {
  EVENTS = data.events.filter(e => start(e)).sort((a, b) => start(a) - start(b));
  showDataStatus(data.updatedAt, offline);
  render();
- checkReminders();
 }
 
 function bell(e){return `<button class="bell ${Object.hasOwn(fav,e.id)?'on':''}" data-bell="${esc(e.id)}" aria-label="${Object.hasOwn(fav,e.id)?'Quitar campana':'Guardar campana'}" aria-pressed="${Object.hasOwn(fav,e.id)}">🔔</button>`}
@@ -212,8 +211,47 @@ function resolveEvent(id) {
  return EVENTS.find(event => event.id === id) || (Object.hasOwn(fav, id) ? fav[id] : null);
 }
 
+function savedEvents() {
+ return Object.keys(fav).map(resolveEvent).filter(event => start(event)).sort((a, b) => start(a) - start(b));
+}
+
+function pinnedText(event, now) {
+ const begins = event && start(event);
+ if (!begins) return '';
+ const remaining = begins - now;
+ if (remaining <= 0) return now < end(event) ? 'En curso' : '';
+ const hours = Math.floor(remaining / 3600000);
+ if (hours) return 'Falta ' + hours + (hours === 1 ? ' hora' : ' horas');
+ return 'Falta ' + Math.ceil(remaining / 60000) + ' min';
+}
+
+function renderPinned() {
+ const list = $('#pinnedList');
+ const now = new Date();
+ list.innerHTML = savedEvents().map(event => {
+  const text = pinnedText(event, now);
+  if (!text) return '';
+  const id = esc(event.id);
+  return '<li class="pinned-event" data-pin="' + id + '"><button class="pinned-open" data-event="' + id + '">' +
+   '<span class="pinned-name">' + esc(event.name) + '</span><span class="pinned-time">' + text + '</span></button>' +
+   '<button class="pinned-remove" data-remove="' + id + '" aria-label="Quitar campanita de ' + esc(event.name) + '">×</button></li>';
+ }).join('');
+ $('#pinnedSection').hidden = !list.children.length;
+}
+
+function refreshPinned() {
+ const list = $('#pinnedList');
+ const now = new Date();
+ for (const item of Array.from(list.children)) {
+  const text = pinnedText(resolveEvent(item.dataset.pin), now);
+  if (text) item.querySelector('.pinned-time').textContent = text;
+  else item.remove();
+ }
+ $('#pinnedSection').hidden = !list.children.length;
+}
+
 function renderSaved() {
- const saved = Object.keys(fav).map(resolveEvent).filter(e => start(e)).sort((a,b) => start(a) - start(b));
+ const saved = savedEvents();
  const now = new Date();
  $('#savedEmpty').hidden = !!saved.length;
  $('#savedList').innerHTML = saved.map(e => {
@@ -282,23 +320,28 @@ function prepareCalendarDownload(link) {
  setTimeout(() => URL.revokeObjectURL(url), 30000);
  return true;
 }
-function render(){renderToday();renderUpcoming();renderWeek();renderSaved();renderPrefs()}
+function render(){renderPinned();renderToday();renderUpcoming();renderWeek();renderSaved();renderPrefs()}
 
 function openEvent(id){const e=resolveEvent(id);if(!e||!start(e))return;const bonuses=e.bonuses||[],notes=e.bonusNotes||[],pokemon=e.pokemon||[];let html=`<div class="modal-hero"><div><span class="date-tag">${emoji(e.category)} ${esc(e.heading||'Evento')}</span><h2>${esc(e.name)}</h2><div class="modal-meta"><span class="modal-pill">🗓️ ${fmt(start(e),{weekday:'long',day:'numeric',month:'long'})}</span><span class="modal-pill">🕒 ${esc(timeText(e))}</span><span class="modal-pill">${esc(relativeLabel(e))}</span></div><p class="modal-summary">${esc(e.summary)}</p></div><img loading="lazy" src="${esc(img(e))}" alt=""></div><section class="modal-section"><h3>💡 Qué vale la pena hacer</h3><div class="detail-item">${esc(worth(e))}</div></section>`;if(bonuses.length)html+=`<section class="modal-section"><h3>✨ Bonos</h3><div class="detail-list">${bonuses.map(x=>`<div class="detail-item">✦ ${esc(x)}</div>`).join('')}</div></section>`;if(notes.length)html+='<ul class="bonus-notes">'+notes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>';if(pokemon.length)html+=`<section class="modal-section"><h3>🌸 Pokémon destacados</h3><div class="pokemon-list">${pokemon.slice(0,12).map(p=>`<div class="poke-chip">${p.image?`<img loading="lazy" src="${esc(p.image)}" alt="">`:''}<span>${esc(p.name)}${p.shiny===true?' ✨':''}</span></div>`).join('')}</div></section>`;if(e.hasSpawns||e.hasFieldResearch)html+=`<section class="modal-section"><h3>📌 Incluye</h3><div class="detail-list">${e.hasSpawns?'<div class="detail-item">Apariciones salvajes</div>':''}${e.hasFieldResearch?'<div class="detail-item">Investigación de campo</div>':''}</div></section>`;if(e.sourceUrl)html+=`<a class="modal-link" href="${esc(e.sourceUrl)}" target="_blank" rel="noopener">Ver fuente completa ↗</a>`;if(start(e)>new Date())html+='<div class="modal-section"><a class="soft-btn calendar-link" href="#" download="pokeweek.ics" data-calendar="'+esc(e.id)+'">Añadir al calendario</a></div>';$('#eventModalContent').innerHTML=html;openModal('eventModal')}
 function openModal(id){const m=$('#'+id);m.classList.add('open');m.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
 function closeModal(id){const m=$('#'+id);m.classList.remove('open');m.setAttribute('aria-hidden','true');document.body.style.overflow=''}
 
 function renderPrefs(){const cats=[['community-day','🌸 Community Day'],['raid','⚡ Incursiones'],['max','💜 Max'],['spotlight','✨ Spotlight'],['research','📚 Investigación'],['event','🎀 Otros']];$('#categoryPrefs').innerHTML=cats.map(([v,l])=>`<label class="pref-item"><span>${l}</span><input type="checkbox" value="${v}" ${prefs.categories.includes(v)?'checked':''}></label>`).join('');$('#settingsLead').value=String(prefs.lead)}
-function savePrefs(){prefs.categories=$$('#categoryPrefs input:checked').map(x=>x.value);prefs.lead=Number($('#settingsLead').value);saveJSON('pokeweek:prefs',prefs);$('#lead').value=String(prefs.lead);checkReminders();closeModal('settingsModal');renderUpcoming()}
-function toggleFav(e) {
- if (Object.hasOwn(fav, e.id)) delete fav[e.id];
- else fav[e.id] = e;
+function savePrefs(){prefs.categories=$$('#categoryPrefs input:checked').map(x=>x.value);prefs.lead=Number($('#settingsLead').value);saveJSON('pokeweek:prefs',prefs);$('#lead').value=String(prefs.lead);closeModal('settingsModal');renderUpcoming()}
+function toggleFav(event) {
+ const isSaved = !Object.hasOwn(fav, event.id);
+ if (isSaved) fav[event.id] = event;
+ else delete fav[event.id];
  saveJSON('pokeweek:fav', fav);
- renderSaved(); renderToday(); renderUpcoming(); renderWeek();
- checkReminders();
+ for (const button of $$('[data-bell="' + CSS.escape(event.id) + '"]')) {
+  button.classList.toggle('on', isSaved);
+  button.setAttribute('aria-pressed', isSaved);
+  button.setAttribute('aria-label', isSaved ? 'Quitar campana' : 'Guardar campana');
+ }
+ renderPinned();
+ renderSaved();
 }
 
-let registration;
 async function initPWA() {
  window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
@@ -308,86 +351,48 @@ async function initPWA() {
  if ('serviceWorker' in navigator) {
   try {
    await navigator.serviceWorker.register('./sw.js');
-   registration = await navigator.serviceWorker.ready;
-   checkReminders();
   } catch (error) { console.warn(error); }
  }
 }
 async function installApp(){if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('#installBtn').hidden=true}else alert('En iPhone/iPad: Compartir → Agregar a pantalla de inicio. En Android, usa “Instalar app” del navegador.')}
-function urlB64ToUint8Array(base64String){const padding='='.repeat((4-base64String.length%4)%4),base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))}
-function showNotice(text) {
- $('#pushNote').textContent = text;
- $('#savedSection').scrollIntoView({behavior: 'smooth'});
-}
-
-async function enableNotifications() {
- if (!window.Notification || !('serviceWorker' in navigator)) {
-  showNotice('Puedes añadir eventos a tu calendario para recibir sus avisos.');
+document.addEventListener('click', event => {
+ const details = event.target.closest('[data-event]');
+ if (details) {
+  openEvent(details.dataset.event);
   return;
  }
- try {
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-   showNotice('Para recibir avisos del navegador, permite las notificaciones en los ajustes del sitio.');
-   return;
-  }
-  const cfg = window.POKE_PUSH_CONFIG;
-  if (cfg?.publicKey && cfg.subscribeUrl && registration?.pushManager) {
-   const manager = registration.pushManager;
-   const subscription = await manager.getSubscription() || await manager.subscribe({
-    userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(cfg.publicKey)
-   });
-   const response = await fetch(cfg.subscribeUrl, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({subscription, preferences: prefs, favorites: Object.keys(fav).map(id => {
-     const {name, start, end} = resolveEvent(id);
-     return {id, name, start, end};
-    })})
-   });
-   if (!response.ok) throw new Error('Web Push: ' + response.status);
-   showNotice('Avisos Web Push conectados.');
-   return;
-  }
-  showNotice('Avisos activos mientras PokéWeek está abierta. Para recibir un aviso con la app cerrada, añade el evento a tu calendario.');
-  checkReminders();
- } catch (error) {
-  console.warn(error);
-  showNotice('No se pudo activar el servicio de avisos. Puedes añadir eventos a tu calendario.');
+ const bell = event.target.closest('[data-bell], [data-remove]');
+ if (bell) {
+  const entry = resolveEvent(bell.dataset.bell || bell.dataset.remove);
+  if (entry) toggleFav(entry);
+  return;
  }
-}
-
-let checkingReminders = false;
-async function checkReminders() {
- if (checkingReminders || !registration || window.Notification?.permission !== 'granted') return;
- checkingReminders = true;
- try {
-  const now = Date.now();
-  for (const id of Object.keys(fav)) {
-   const event = resolveEvent(id);
-   const begins = start(event);
-   if (!begins || now >= +begins || now < +begins - prefs.lead * 60000) continue;
-   const tag = 'pokeweek:' + event.id + ':' + begins.toISOString();
-   if (localStorage.getItem(tag)) continue;
-   await registration.showNotification('🔔 Pokémon GO', {
-    body: event.name + ' · ' + relativeLabel(event),
-    icon: 'assets/pokeball.png', tag, data: eventLink(id).href
-   });
-   localStorage.setItem(tag, '1');
-  }
- } catch (error) { console.warn(error); }
- finally { checkingReminders = false; }
-}
-
-document.addEventListener('click',e=>{const evt=e.target.closest('[data-event]');if(evt){openEvent(evt.dataset.event);return}const bell=e.target.closest('[data-bell]');if(bell){const ev=EVENTS.find(x=>x.id===bell.dataset.bell);if(ev)toggleFav(ev);return}const calendar=e.target.closest('[data-calendar]');if(calendar){if(!prepareCalendarDownload(calendar))e.preventDefault();return}const rm=e.target.closest('[data-remove]');if(rm){const event=resolveEvent(rm.dataset.remove);if(event)toggleFav(event);return}const close=e.target.closest('[data-close]');if(close){closeModal(close.dataset.close);return}const jump=e.target.closest('[data-jump]');if(jump){document.getElementById(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'});return}})
+ const calendar = event.target.closest('[data-calendar]');
+ if (calendar) {
+  if (!prepareCalendarDownload(calendar)) event.preventDefault();
+  return;
+ }
+ const close = event.target.closest('[data-close]');
+ if (close) {
+  closeModal(close.dataset.close);
+  return;
+ }
+ const jump = event.target.closest('[data-jump]');
+ if (jump) {
+  const destination = jump.dataset.jump === 'savedSection' && !$('#pinnedSection').hidden
+   ? $('#pinnedSection')
+   : document.getElementById(jump.dataset.jump);
+  destination?.scrollIntoView();
+ }
+});
 $$('.chip').forEach(b=>b.onclick=()=>{$$('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderWeek()});
-$('#upcomingFilter').onchange=e=>{upcomingClass=e.target.value;renderUpcoming()};$('#prevWeek').onclick=()=>{weekOffset--;renderWeek()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();$('#weekSection').scrollIntoView({behavior:'smooth'})};$('#lead').onchange=e=>{prefs.lead=Number(e.target.value);saveJSON('pokeweek:prefs',prefs);checkReminders()};$('#settingsBtn').onclick=()=>openModal('settingsModal');$('#mobileSettings').onclick=()=>openModal('settingsModal');$('#saveSettings').onclick=savePrefs;$('#notifyBtn').onclick=enableNotifications;$('#installBtn').onclick=installApp;$('#versionBtn').onclick=()=>openModal('changelogModal');$('#changelogBtn').onclick=()=>openModal('changelogModal');document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal.open').forEach(m=>closeModal(m.id))});
+$('#upcomingFilter').onchange=e=>{upcomingClass=e.target.value;renderUpcoming()};$('#prevWeek').onclick=()=>{weekOffset--;renderWeek()};$('#nextWeek').onclick=()=>{weekOffset++;renderWeek()};$('#goToday').onclick=()=>{weekOffset=0;renderWeek();$('#weekSection').scrollIntoView({behavior:'smooth'})};$('#lead').onchange=e=>{prefs.lead=Number(e.target.value);saveJSON('pokeweek:prefs',prefs)};$('#settingsBtn').onclick=()=>openModal('settingsModal');$('#mobileSettings').onclick=()=>openModal('settingsModal');$('#saveSettings').onclick=savePrefs;$('#installBtn').onclick=installApp;$('#versionBtn').onclick=()=>openModal('changelogModal');$('#changelogBtn').onclick=()=>openModal('changelogModal');document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal.open').forEach(m=>closeModal(m.id))});
 function refreshTime() {
  if (document.hidden) return;
+ refreshPinned();
  if (!document.activeElement?.closest('#todayCards,#todayEvents,#weekGrid,#weekOngoing,#upcomingList')) {
   renderToday(); renderUpcoming(); renderWeek();
  }
- checkReminders();
 }
 
 window.addEventListener('online', load);

@@ -34,7 +34,7 @@ jobs:
       - name: Preparar archivos públicos
         run: |
           mkdir -p _site
-          cp .nojekyll index.html compartir.html app.js share.js push-config.js styles.css sw.js manifest.webmanifest version.json _site/
+          cp .nojekyll index.html compartir.html app.js share.js styles.css sw.js manifest.webmanifest version.json _site/
           cp -r assets data _site/
       - name: Generar agenda y miniaturas
         run: |

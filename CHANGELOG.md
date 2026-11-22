@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.4.0 · 21 de noviembre de 2026
+
+- Las campanitas fijan eventos arriba con una cuenta atrás y el estado «En curso».
+- Los avisos del calendario se pueden configurar y exportar desde las fichas.
+
 ## v3.3.0 · 21 de noviembre de 2026
 
 - Publicación automática del feed con fecha de actualización en hora de Monterrey.

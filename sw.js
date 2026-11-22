@@ -1,9 +1,9 @@
 const PREFIX = 'pokeweek-';
-const CACHE = PREFIX + 'v3.3.0-countdown';
+const CACHE = PREFIX + 'v3.4.0';
 const ROOT = new URL(self.registration.scope);
 const DATA = new URL('data/events.normalized.json', ROOT);
 const SHELL = [
- './', 'compartir.html', 'share.js', 'assets/yuli-master-pokemon-preview.jpg', 'styles.css', 'app.js', 'push-config.js', 'manifest.webmanifest',
+ './', 'compartir.html', 'share.js', 'assets/yuli-master-pokemon-preview.jpg', 'styles.css', 'app.js', 'manifest.webmanifest',
  'data/events.normalized.json', 'assets/pokeball.svg', 'assets/pokeball.png', 'assets/pokeball-512.png', 'assets/eevee.png', 'assets/nunito.woff2'
 ];
 
@@ -57,27 +57,4 @@ self.addEventListener('fetch', event => {
    (url.pathname === ROOT.pathname || url.pathname === new URL('index.html', ROOT).pathname);
   event.respondWith(loadAsset(request, isAgendaPage ? ROOT.href : request));
  }
-});
-
-self.addEventListener('push', event => {
- let message;
- try { message = event.data?.json(); }
- catch { message = {body: event.data?.text()}; }
- event.waitUntil(self.registration.showNotification(message?.title || '🔔 Pokémon GO', {
-  body: message?.body || 'Tienes un evento próximo',
-  icon: new URL('assets/pokeball.png', ROOT).href,
-  badge: new URL('assets/pokeball.png', ROOT).href,
-  tag: message?.tag,
-  data: message?.url || ROOT.href
- }));
-});
-
-self.addEventListener('notificationclick', event => {
- event.notification.close();
- let destination = ROOT;
- try {
-  const url = new URL(event.notification.data || ROOT, ROOT);
-  if (url.origin === ROOT.origin && url.pathname.startsWith(ROOT.pathname)) destination = url;
- } catch {}
- event.waitUntil(clients.openWindow(destination.href));
 });

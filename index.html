@@ -40,10 +40,15 @@
     </a>
     <div class="hero-actions">
       <button class="soft-btn" id="installBtn" hidden>Instalar app</button>
-      <button class="soft-btn" id="notifyBtn"><span aria-hidden="true">🔔</span> Avisos</button>
+      <button class="soft-btn" data-jump="savedSection"><span aria-hidden="true">🔔</span> Campanas</button>
       <button class="soft-btn" id="settingsBtn"><span aria-hidden="true">⚙️</span> Preferencias</button>
     </div>
   </div>
+
+  <section class="pinned-section" id="pinnedSection" aria-labelledby="pinnedTitle" hidden>
+    <h2 id="pinnedTitle"><span aria-hidden="true">🔔</span> Mis campanitas</h2>
+    <ul class="pinned-list" id="pinnedList"></ul>
+  </section>
 
   <header class="hero">
     <div class="hero-copy">
@@ -112,11 +117,10 @@
 
   <section class="bottom-grid">
     <div class="glass panel" id="savedSection">
-      <div class="section-title compact"><h2><span class="section-icon sun" aria-hidden="true">🔔</span> Mis campanitas</h2></div>
-      <label class="reminder-setting">Avisarme <select id="lead"><option value="15">15 min antes</option><option value="30">30 min antes</option><option value="60">1 hora antes</option><option value="180">3 horas antes</option><option value="1440">1 día antes</option></select></label>
+      <div class="section-title compact"><h2><span class="section-icon sun" aria-hidden="true">🔔</span> Eventos guardados</h2></div>
+      <label class="reminder-setting">Aviso en el calendario <select id="lead"><option value="15">15 min antes</option><option value="30">30 min antes</option><option value="60">1 hora antes</option><option value="180">3 horas antes</option><option value="1440">1 día antes</option></select></label>
       <div id="savedList"></div>
-      <p class="hint" id="savedEmpty">Toca la 🔔 de un evento para guardarlo aquí.</p>
-      <p class="push-note" id="pushNote" role="status">Abre un evento y elige “Añadir al calendario” para programar su aviso.</p>
+      <p class="hint" id="savedEmpty">Toca la 🔔 de un evento para fijarlo arriba.</p>
     </div>
 
   </section>
@@ -125,7 +129,7 @@
     <p>Hecho con ♡ para Yuli</p>
     <div class="footer-meta">
       <div class="sync-pill" role="status"><span class="dot" aria-hidden="true"></span><span id="syncText">Cargando eventos…</span></div>
-      <button class="version-pill" id="versionBtn">v3.3.0</button>
+      <button class="version-pill" id="versionBtn">v3.4.0</button>
       <a class="footer-link" href="compartir.html">Compartir agenda</a>
       <button class="footer-link" id="changelogBtn">Novedades</button>
     </div>
@@ -140,10 +144,9 @@
 </nav>
 
 <div class="modal" id="eventModal" aria-hidden="true"><div class="backdrop" data-close="eventModal"></div><section class="sheet" role="dialog"><button class="modal-close" aria-label="Cerrar" data-close="eventModal">×</button><div id="eventModalContent"></div></section></div>
-<div class="modal" id="settingsModal" aria-hidden="true"><div class="backdrop" data-close="settingsModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="settingsModal">×</button><h2>Preferencias</h2><p class="hint">Elige qué categorías quieres destacar en “Próximos”.</p><div id="categoryPrefs" class="pref-list"></div><label class="setting-row"><span>Aviso predeterminado</span><select id="settingsLead"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hora</option><option value="180">3 horas</option><option value="1440">1 día</option></select></label><button class="primary-btn" id="saveSettings">Guardar preferencias</button></section></div>
-<div class="modal" id="changelogModal" aria-hidden="true"><div class="backdrop" data-close="changelogModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="changelogModal">×</button><h2>PokéWeek v3.3.0</h2><div class="change-list"><p>🗓️ Agenda semanal con una tarjeta por evento y fecha real de actualización.</p><p>♡ Portada con Eevee, paleta pastel y tarjetas más legibles en móvil.</p><p>✨ PWA instalable y modo offline.</p><p>⚡ Datos normalizados y miniaturas optimizadas.</p><p>🔔 Añade eventos al calendario con la anticipación de tus campanas.</p><p>🕒 Horarios de Monterrey aunque viajes y resumen de eventos activos.</p><p>🧪 Validación automática antes de publicar.</p></div></section></div>
+<div class="modal" id="settingsModal" aria-hidden="true"><div class="backdrop" data-close="settingsModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="settingsModal">×</button><h2>Preferencias</h2><p class="hint">Elige qué categorías quieres destacar en “Próximos”.</p><div id="categoryPrefs" class="pref-list"></div><label class="setting-row"><span>Aviso en el calendario</span><select id="settingsLead"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hora</option><option value="180">3 horas</option><option value="1440">1 día</option></select></label><button class="primary-btn" id="saveSettings">Guardar preferencias</button></section></div>
+<div class="modal" id="changelogModal" aria-hidden="true"><div class="backdrop" data-close="changelogModal"></div><section class="sheet small-sheet"><button class="modal-close" aria-label="Cerrar" data-close="changelogModal">×</button><h2>PokéWeek v3.4.0</h2><div class="change-list"><p>🔔 Las campanitas fijan eventos arriba con una cuenta atrás.</p><p>🗓️ Agenda semanal con una tarjeta por evento y fecha real de actualización.</p><p>♡ Portada con Eevee, paleta pastel y tarjetas más legibles en móvil.</p><p>✨ PWA instalable y modo offline.</p><p>⚡ Datos normalizados y miniaturas optimizadas.</p><p>🔔 Añade eventos al calendario con la anticipación que elijas.</p><p>🕒 Horarios de Monterrey aunque viajes y resumen de eventos activos.</p><p>🧪 Validación automática antes de publicar.</p></div></section></div>
 
-<script src="push-config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
