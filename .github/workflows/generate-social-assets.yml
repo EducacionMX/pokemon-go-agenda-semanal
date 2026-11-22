@@ -18,12 +18,13 @@ jobs:
       - name: Generar PNG
         run: |
           rsvg-convert -w 192 -h 192 assets/pokeball.svg -o assets/pokeball.png
+          rsvg-convert -w 512 -h 512 assets/pokeball.svg -o assets/pokeball-512.png
           rsvg-convert -w 1200 -h 630 assets/yuli-master-pokemon.svg -o assets/yuli-master-pokemon.png
       - name: Guardar PNG
         run: |
           git config user.name "pokeweek-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add assets/pokeball.png assets/yuli-master-pokemon.png
+          git add assets/pokeball.png assets/pokeball-512.png assets/yuli-master-pokemon.png
           if git diff --cached --quiet; then
             echo "Sin cambios"
           else

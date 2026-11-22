@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.1.0 · 21 de noviembre de 2026
+
+- Añade eventos al calendario con el aviso elegido en Mis campanitas.
+- Respeta la hora de Monterrey incluso si el dispositivo usa otra zona.
+- Muestra los eventos de varios días que siguen activos y carga la última agenda disponible al quedarse sin conexión.
+
 ## 3.0.0 — App Edition
 - Reconstrucción de CSS y JavaScript.
 - PWA instalable y service worker con modo offline.

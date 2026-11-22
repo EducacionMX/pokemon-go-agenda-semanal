@@ -14,10 +14,10 @@
       "type": "image/png"
     },
     {
-      "src": "assets/pokeball.png",
+      "src": "assets/pokeball-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
