@@ -3,30 +3,22 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 */6 * * *"
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/update-events.yml"
 permissions:
   contents: write
+concurrency:
+  group: update-events
+  cancel-in-progress: true
 jobs:
-  update-events:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Descargar eventos actuales
-        run: |
-          mkdir -p data
-          curl -fsSL "https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json" -o data/live-events.json
-          python -m json.tool data/live-events.json >/dev/null
-      - name: Guardar cambios
-        run: |
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install requests pillow
+      - run: python scripts/update_events.py
+      - run: |
           git config user.name "pokeweek-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/live-events.json
-          if git diff --cached --quiet; then
-            echo "Sin cambios"
-          else
-            git commit -m "Actualizar eventos Pokémon GO"
-            git push
-          fi
+          git add data/events.normalized.json assets/event-images
+          if git diff --cached --quiet; then echo "Sin cambios"; else git commit -m "Actualizar eventos normalizados"; git push; fi

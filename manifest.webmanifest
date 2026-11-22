@@ -1,0 +1,23 @@
+{
+  "name": "PokéWeek · Agenda Pokémon GO de Yuli",
+  "short_name": "PokéWeek",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff2f8",
+  "theme_color": "#f7d6eb",
+  "description": "Agenda semanal de Pokémon GO de Yuli.",
+  "icons": [
+    {
+      "src": "assets/pokeball.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/pokeball.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

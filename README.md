@@ -1,21 +1,25 @@
-# 🌸 PokéWeek · Agenda semanal de Pokémon GO
+# PokéWeek v3.0.0 · App Edition
 
-Agenda visual y móvil para consultar eventos de Pokémon GO en hora de Monterrey.
+Agenda semanal de Pokémon GO para Yuli.
 
-## V2
-- Diseño cute/cozy con Pokémon decorativos.
-- Bloque **Hoy**, agenda semanal, próximos eventos y campanitas.
-- Datos locales de respaldo para que la página nunca quede vacía.
-- GitHub Actions actualiza `data/live-events.json` automáticamente cada 6 horas desde ScrapedDuck/LeekDuck.
-- Filtros para Community Day, incursiones, Max, Spotlight y eventos.
-- Exportación a calendario (.ics) con alarma.
-- Botón para copiar una solicitud de recordatorio para ChatGPT.
-- Las campanitas se guardan en el navegador con localStorage.
+## Funciones
+- Vista Hoy + Próximos + semana.
+- Filtros por tipo de evento.
+- Ficha completa por evento.
+- PWA instalable y caché offline.
+- Campanas y preferencias persistentes.
+- Recordatorios automáticos mientras la PWA está abierta.
+- Web Push preparado mediante `push-config.js`.
+- Eventos normalizados cada 6 h desde ScrapedDuck/LeekDuck.
+- Miniaturas WebP optimizadas automáticamente.
+- QA automático en GitHub Actions.
+
+## Activar Web Push con la app cerrada
+Configura en `push-config.js`:
+- `publicKey`: clave pública VAPID.
+- `subscribeUrl`: endpoint HTTPS que reciba la suscripción Push y programe avisos.
+
+El service worker ya implementa la recepción de eventos `push`.
 
 ## Sitio
 https://educacionmx.github.io/pokemon-go-agenda-semanal/
-
-## Datos
-El sitio intenta cargar primero `data/live-events.json`. Si ese archivo no está disponible, usa `data/events.json` como respaldo.
-
-Fuente comunitaria: https://github.com/bigfoott/ScrapedDuck

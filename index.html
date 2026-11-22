@@ -2,9 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f7d6eb">
+<meta name="description" content="PokéWeek: agenda semanal de Pokémon GO de Yuli con eventos, horarios y recordatorios.">
 <title>PokéWeek ♡ Agenda Pokémon GO</title>
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="assets/pokeball.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/pokeball.png">
 <link rel="apple-touch-icon" href="assets/pokeball.png">
@@ -15,19 +17,14 @@
 <meta property="og:image" content="https://educacionmx.github.io/pokemon-go-agenda-semanal/assets/yuli-master-pokemon.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:type" content="image/png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Yuli Master Pokemon · PokéWeek">
-<meta name="twitter:description" content="Agenda semanal de Pokémon GO de Yuli.">
 <meta name="twitter:image" content="https://educacionmx.github.io/pokemon-go-agenda-semanal/assets/yuli-master-pokemon.png">
 <link rel="preconnect" href="https://raw.githubusercontent.com">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="decor decor-1"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></div>
-<div class="decor decor-2"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/700.png" alt=""></div>
-<div class="decor decor-3"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png" alt=""></div>
-<div class="sparkles" aria-hidden="true">✦ ˚₊‧♡‧₊˚ ✧</div>
+<div class="bg-decor bg-a"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt=""></div>
+<div class="bg-decor bg-b"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/700.png" alt=""></div>
 
 <main class="shell">
   <header class="hero glass">
@@ -37,7 +34,13 @@
       <h1>PokéWeek</h1>
       <p>Tu semana Pokémon, bonita y sin que se te vuelva a escapar un Community Day.</p>
     </div>
-    <div class="status-stack"><div class="version-badge">v2.3</div><div class="sync-pill" id="syncPill"><span class="dot"></span><span id="syncText">Cargando eventos…</span></div></div>
+    <div class="hero-actions">
+      <button class="version-pill" id="versionBtn">v3.0.0</button>
+      <div class="sync-pill"><span class="dot"></span><span id="syncText">Cargando eventos…</span></div>
+      <button class="soft-btn" id="installBtn" hidden>⬇️ Instalar app</button>
+      <button class="soft-btn" id="notifyBtn">🔔 Avisos</button>
+      <button class="soft-btn" id="settingsBtn">⚙️ Preferencias</button>
+    </div>
   </header>
 
   <section class="today-wrap" id="todaySection">
@@ -46,7 +49,7 @@
       <button class="ghost" id="goToday">Volver a esta semana</button>
     </div>
     <div class="today-upcoming-grid">
-      <div id="todayCards" class="feature-grid today-main"></div>
+      <div id="todayCards" class="today-main"></div>
       <aside class="glass upcoming-box">
         <div class="upcoming-box-head">
           <div><span class="mini">✦ SIGUIENTES</span><h2>Próximos</h2></div>
@@ -56,6 +59,7 @@
             <option value="raid">⚡ Incursiones</option>
             <option value="max">💜 Max</option>
             <option value="spotlight">✨ Spotlight</option>
+            <option value="research">📚 Investigación</option>
             <option value="event">🎀 Otros</option>
           </select>
         </div>
@@ -64,60 +68,54 @@
     </div>
   </section>
 
-  <section class="glass planner">
+  <section class="glass planner" id="weekSection">
     <div class="planner-head">
-      <div>
-        <span class="mini">♡ SEMANA</span>
-        <h2 id="weekTitle">Esta semana</h2>
-      </div>
-      <div class="week-nav">
-        <button class="round" id="prevWeek" aria-label="Semana anterior">‹</button>
-        <button class="round" id="nextWeek" aria-label="Semana siguiente">›</button>
-      </div>
+      <div><span class="mini">♡ SEMANA</span><h2 id="weekTitle">Esta semana</h2></div>
+      <div class="week-nav"><button class="round" id="prevWeek">‹</button><button class="round" id="nextWeek">›</button></div>
     </div>
-
     <div class="filters" id="filters">
       <button class="chip active" data-filter="all">Todo</button>
       <button class="chip" data-filter="community-day">🌸 Community</button>
       <button class="chip" data-filter="raid">⚡ Incursiones</button>
       <button class="chip" data-filter="max">💜 Max</button>
       <button class="chip" data-filter="spotlight">✨ Spotlight</button>
+      <button class="chip" data-filter="research">📚 Investigación</button>
       <button class="chip" data-filter="event">🎀 Eventos</button>
     </div>
-
     <div class="week-grid" id="weekGrid"></div>
   </section>
 
   <section class="bottom-grid">
-    <div class="glass panel">
+    <div class="glass panel" id="savedSection">
       <div class="section-title compact"><div><span class="mini">🔔 GUARDADOS</span><h2>Mis campanitas</h2></div></div>
-      <div class="reminder-setting">Avisarme <select id="lead"><option value="15">15 min antes</option><option value="30">30 min antes</option><option value="60" selected>1 hora antes</option><option value="180">3 horas antes</option><option value="1440">1 día antes</option></select></div>
+      <div class="reminder-setting">Avisarme <select id="lead"><option value="15">15 min antes</option><option value="30">30 min antes</option><option value="60">1 hora antes</option><option value="180">3 horas antes</option><option value="1440">1 día antes</option></select></div>
       <div id="savedList"></div>
       <p class="hint" id="savedEmpty">Toca la 🔔 de un evento para guardarlo aquí.</p>
+      <p class="push-note" id="pushNote"></p>
     </div>
 
-    <div class="glass panel upcoming-panel">
+    <div class="glass panel">
       <div class="section-title compact"><div><span class="mini">✦ PRÓXIMO</span><h2>No te pierdas…</h2></div></div>
       <div id="nextBig"></div>
-      <p class="source-note">Los datos se sincronizan desde LeekDuck/ScrapedDuck. Si la sincronización falla, se usa una copia local de respaldo.</p>
+      <p class="source-note">Datos normalizados automáticamente desde ScrapedDuck/LeekDuck. Las miniaturas se optimizan en GitHub Actions.</p>
     </div>
   </section>
 
-  <footer>Hecho con ♡ para jugar sin perderse los eventos · Hora de Monterrey</footer>
+  <footer>Hecho con ♡ para Yuli · Hora de Monterrey · <button class="footer-link" id="changelogBtn">Novedades</button></footer>
 </main>
+
 <nav class="mobile-nav" aria-label="Navegación rápida">
   <button data-jump="todaySection">☀️<span>Hoy</span></button>
-  <button data-jump="weekGrid">🗓️<span>Semana</span></button>
-  <button data-jump="savedList">🔔<span>Campanas</span></button>
-  <button data-jump="nextBig">✨<span>Próximo</span></button>
+  <button data-jump="weekSection">🗓️<span>Semana</span></button>
+  <button data-jump="savedSection">🔔<span>Campanas</span></button>
+  <button id="mobileSettings">⚙️<span>Ajustes</span></button>
 </nav>
+
+<div class="modal" id="eventModal" aria-hidden="true"><div class="backdrop" data-close="eventModal"></div><section class="sheet" role="dialog"><button class="modal-close" data-close="eventModal">×</button><div id="eventModalContent"></div></section></div>
+<div class="modal" id="settingsModal" aria-hidden="true"><div class="backdrop" data-close="settingsModal"></div><section class="sheet small-sheet"><button class="modal-close" data-close="settingsModal">×</button><h2>Preferencias</h2><p class="hint">Elige qué categorías quieres destacar en “Próximos”.</p><div id="categoryPrefs" class="pref-list"></div><label class="setting-row"><span>Aviso predeterminado</span><select id="settingsLead"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hora</option><option value="180">3 horas</option><option value="1440">1 día</option></select></label><button class="primary-btn" id="saveSettings">Guardar preferencias</button></section></div>
+<div class="modal" id="changelogModal" aria-hidden="true"><div class="backdrop" data-close="changelogModal"></div><section class="sheet small-sheet"><button class="modal-close" data-close="changelogModal">×</button><h2>PokéWeek v3.0.0</h2><div class="change-list"><p>✨ PWA instalable y modo offline.</p><p>⚡ Datos normalizados y miniaturas optimizadas.</p><p>🔔 Campanas con recordatorios en primer plano y base para Web Push.</p><p>⚙️ Preferencias persistentes.</p><p>🧪 Validación automática antes de publicar.</p></div></section></div>
+
+<script src="push-config.js"></script>
 <script src="app.js"></script>
-<div class="event-modal" id="eventModal" aria-hidden="true">
-  <div class="event-modal-backdrop" data-close-modal></div>
-  <section class="event-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
-    <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-    <div id="eventModalContent"></div>
-  </section>
-</div>
 </body>
 </html>

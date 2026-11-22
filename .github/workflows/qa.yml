@@ -1,0 +1,32 @@
+name: QA PokéWeek
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Validar JavaScript
+        run: |
+          node --check app.js
+          node --check push-config.js
+          node --check sw.js
+      - name: Validar JSON
+        run: |
+          python -m json.tool manifest.webmanifest >/dev/null
+          python -m json.tool data/events.normalized.json >/dev/null
+          python -m json.tool version.json >/dev/null
+      - name: Comprobar archivos críticos
+        run: |
+          test -s index.html
+          test -s styles.css
+          test -s app.js
+          grep -q "v3.0.0" index.html
