@@ -1,10 +1,10 @@
 const PREFIX = 'pokeweek-';
-const CACHE = PREFIX + 'v3.1.0';
+const CACHE = PREFIX + 'v3.2.0';
 const ROOT = new URL(self.registration.scope);
 const DATA = new URL('data/events.normalized.json', ROOT);
 const SHELL = [
  './', 'styles.css', 'app.js', 'push-config.js', 'manifest.webmanifest',
- 'data/events.normalized.json', 'assets/pokeball.svg', 'assets/pokeball.png', 'assets/pokeball-512.png', 'assets/eevee.png'
+ 'data/events.normalized.json', 'assets/pokeball.svg', 'assets/pokeball.png', 'assets/pokeball-512.png', 'assets/eevee.png', 'assets/nunito.woff2'
 ];
 
 self.addEventListener('install', event => {

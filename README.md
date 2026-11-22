@@ -1,4 +1,4 @@
-# PokéWeek v3.1.0 · App Edition
+# PokéWeek v3.2.0 · App Edition
 
 Agenda semanal de Pokémon GO para Yuli.
 

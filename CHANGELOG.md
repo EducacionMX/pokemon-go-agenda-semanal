@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.2.0 · 21 de noviembre de 2026
+
+- Portada con Eevee, colores pastel y tarjetas diferenciadas por categoría.
+- Horarios, filtros y controles más fáciles de leer y tocar en pantallas pequeñas.
+- Próximos aparece junto al resumen de Hoy. En móvil, cada día de la semana se puede desplegar.
+
 ## v3.1.0 · 21 de noviembre de 2026
 
 - Añade eventos al calendario con el aviso elegido en Mis campanitas.
