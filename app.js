@@ -82,8 +82,11 @@ function featureCard(e,now){
 }
 function renderToday(){
  const now=new Date();
- const list=EVENTS.filter(e=>start(e)&&same(start(e),now)&&end(e)>=now).slice(0,4);
- $('#todayCards').innerHTML=list.length?list.map(e=>featureCard(e,now)).join(''):'<article class="feature-card eevee-empty"><span class="date-tag">♡ TRANQUILA</span><h3>No hay eventos activos hoy</h3><p>Mira el cuadro de “Próximos” para preparar lo que viene.</p><img class="event-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="Eevee"></article>';
+ const list=EVENTS.filter(e=>start(e)&&same(start(e),now)&&end(e)>=now).slice(0,3);
+ const eevee='<article class="feature-card eevee-home"><span class="date-tag">♡ TU COMPAÑERO</span><h3>Hola, Yuli ♡</h3><p>'+(
+   list.length?'Estos son los eventos activos de hoy.':'Hoy está tranquilo. Revisa “Próximos” para preparar lo que viene.'
+ )+'</p><img class="event-img eevee-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="Eevee"></article>';
+ $('#todayCards').innerHTML=eevee+(list.length?list.map(e=>featureCard(e,now)).join(''):'');
 }
 function renderUpcoming(){
  const now=new Date();
