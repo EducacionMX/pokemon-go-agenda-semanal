@@ -1,9 +1,9 @@
 const PREFIX = 'pokeweek-';
-const CACHE = PREFIX + 'v3.2.0-social';
+const CACHE = PREFIX + 'v3.2.0-compartir';
 const ROOT = new URL(self.registration.scope);
 const DATA = new URL('data/events.normalized.json', ROOT);
 const SHELL = [
- './', 'styles.css', 'app.js', 'push-config.js', 'manifest.webmanifest',
+ './', 'compartir.html', 'share.js', 'assets/yuli-master-pokemon-preview.jpg', 'styles.css', 'app.js', 'push-config.js', 'manifest.webmanifest',
  'data/events.normalized.json', 'assets/pokeball.svg', 'assets/pokeball.png', 'assets/pokeball-512.png', 'assets/eevee.png', 'assets/nunito.woff2'
 ];
 

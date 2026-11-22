@@ -553,3 +553,10 @@ footer p { margin: 0 0 5px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+.share-shell { max-width: 790px; }
+.share-panel { padding: clamp(16px, 4vw, 32px); }
+.share-panel h1 { margin: 0 0 14px; font-size: clamp(1.45rem, 4vw, 2rem); line-height: 1.2; }
+.share-panel > img { display: block; width: 100%; height: auto; border-radius: 17px; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+.share-panel .hint { overflow-wrap: anywhere; }

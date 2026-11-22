@@ -19,6 +19,7 @@ jobs:
           node --check app.js
           node --check push-config.js
           node --check sw.js
+          node --check share.js
       - name: Validar JSON
         run: |
           python -m json.tool manifest.webmanifest >/dev/null
@@ -27,6 +28,7 @@ jobs:
       - name: Comprobar archivos críticos
         run: |
           test -s index.html
+          test -s compartir.html
           test -s styles.css
           test -s app.js
           test -s assets/nunito.woff2
