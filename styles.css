@@ -188,3 +188,70 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.24;ba
 .eevee-home{background:linear-gradient(135deg,#fff5e8,#ffe8f2)}
 .eevee-home .eevee-img{width:210px;height:175px}
 @media(max-width:520px){.eevee-home .eevee-img{width:145px;height:130px}}
+
+/* FIX imágenes desbordadas */
+.feature-card,.event-card,.upcoming-item,.next-card,.modal-hero{overflow:hidden}
+.feature-card .event-img{
+  position:absolute !important;
+  right:0 !important;
+  bottom:0 !important;
+  width:220px !important;
+  height:180px !important;
+  max-width:46% !important;
+  max-height:78% !important;
+  object-fit:contain !important;
+  object-position:center bottom !important;
+}
+.event-card .card-img{
+  width:78px !important;
+  height:78px !important;
+  max-width:78px !important;
+  max-height:78px !important;
+  object-fit:contain !important;
+  object-position:center !important;
+}
+.upcoming-thumb{
+  width:72px !important;
+  height:72px !important;
+  max-width:72px !important;
+  max-height:72px !important;
+  object-fit:contain !important;
+  object-position:center !important;
+}
+.next-card img{
+  position:absolute !important;
+  right:4px !important;
+  bottom:0 !important;
+  width:150px !important;
+  height:130px !important;
+  max-width:38% !important;
+  max-height:82% !important;
+  object-fit:contain !important;
+  object-position:center bottom !important;
+}
+.modal-hero img{
+  width:220px !important;
+  height:180px !important;
+  max-width:220px !important;
+  max-height:180px !important;
+  object-fit:contain !important;
+  object-position:center !important;
+}
+img.clickable{display:block}
+@media(max-width:520px){
+  .feature-card .event-img{
+    width:140px !important;height:120px !important;max-width:42% !important;max-height:68% !important;
+  }
+  .event-card .card-img{
+    width:72px !important;height:72px !important;max-width:72px !important;max-height:72px !important;
+  }
+  .upcoming-thumb{
+    width:68px !important;height:68px !important;max-width:68px !important;max-height:68px !important;
+  }
+  .next-card img{
+    width:118px !important;height:105px !important;max-width:36% !important;max-height:72% !important;
+  }
+  .modal-hero img{
+    width:110px !important;height:110px !important;max-width:110px !important;max-height:110px !important;
+  }
+}
